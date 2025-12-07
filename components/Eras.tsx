@@ -4,6 +4,51 @@ import { ThemeEra } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from './Button';
 
+// --- Helper Component: Snow Effect ---
+const SnowOverlay = () => {
+  // Cria flocos de neve aleatórios
+  const flakes = Array.from({ length: 30 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    animationDuration: `${Math.random() * 5 + 5}s`,
+    animationDelay: `${Math.random() * 5}s`,
+    size: `${Math.random() * 1.5 + 0.5}rem`,
+    opacity: Math.random() * 0.5 + 0.3
+  }));
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden" aria-hidden="true">
+      {flakes.map((flake) => (
+        <div
+          key={flake.id}
+          className="absolute text-white animate-fall"
+          style={{
+            left: flake.left,
+            top: '-10%',
+            fontSize: flake.size,
+            opacity: flake.opacity,
+            animationDuration: flake.animationDuration,
+            animationDelay: flake.animationDelay,
+          }}
+        >
+          ❄
+        </div>
+      ))}
+      <style>{`
+        @keyframes fall {
+          0% { transform: translateY(-10vh) rotate(0deg); }
+          100% { transform: translateY(110vh) rotate(360deg); }
+        }
+        .animate-fall {
+          animation-name: fall;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 // --- Rich Data Structures ---
 
 interface AttractionPreview {
@@ -38,24 +83,24 @@ const erasData: EraData[] = [
     title: 'Era Glacial',
     subtitle: 'O Reino de Gelo',
     icon: <Snowflake className="w-8 h-8" />,
-    description: 'Enfrente o frio extremo e criaturas pré-históricas.',
-    longDescription: 'Mergulhe em um mundo onde a temperatura cai drasticamente e gigantes do passado caminham entre nós. A Era Glacial do SetLand não é apenas neve cenográfica; é uma experiência sensorial completa com ventos gelados, arquitetura de cristal e a emocionante Montanha Russa Blizzard.',
-    details: ['Montanha Russa Blizzard', 'Show de Patinação', 'Hotel Iglu'],
+    description: 'Enfrente -17°C e esculturas de gelo reais.',
+    longDescription: 'O Parque de Gelo do Castelo Setland é uma das atrações mais frias e emocionantes do parque temático. Com uma temperatura média de 17 graus Celsius abaixo de zero, é um verdadeiro desafio para aqueles que procuram aventura e diversão. Lá dentro, os visitantes podem explorar esculturas de gelo incríveis e até um escorregador. Além disso, é possível experimentar a sensação de neve e gelo, algo raro na região do centro-oeste brasileiro. Para aqueles que se aventuram no Parque de Gelo, o Castelo Setland oferece casacos higienizados todos os dias e, para recuperar as energias, um delicioso chocolate quente para se aquecer.',
+    details: ['Temperatura de -17°C', 'Esculturas de Gelo', 'Casacos Higienizados Inclusos'],
     image: 'https://picsum.photos/seed/ice-bg/1200/600',
     color: 'bg-glacial-base',
     textColor: 'text-glacial-accent',
     buttonColor: 'bg-glacial-accent text-slate-900',
-    rating: 4.8,
-    duration: '3-4 horas',
+    rating: 4.9,
+    duration: 'Tempo Livre',
     galleryImages: [
       'https://picsum.photos/seed/ice1/600/400',
       'https://picsum.photos/seed/ice2/600/400',
       'https://picsum.photos/seed/ice3/600/400',
     ],
     attractionsList: [
-      { name: 'Pico da Nevasca', type: 'Radical', image: 'https://picsum.photos/seed/ice-attr1/300/200' },
-      { name: 'Vila Pinguim', type: 'Infantil', image: 'https://picsum.photos/seed/ice-attr2/300/200' },
-      { name: 'Mamute Animatronic', type: 'Show', image: 'https://picsum.photos/seed/ice-attr3/300/200' },
+      { name: 'Escorregador de Gelo', type: 'Radical', image: 'https://picsum.photos/seed/ice-attr1/300/200' },
+      { name: 'Esculturas Cristal', type: 'Exposição', image: 'https://picsum.photos/seed/ice-attr2/300/200' },
+      { name: 'Iglu Bar', type: 'Alimentação', image: 'https://picsum.photos/seed/ice-attr3/300/200' },
     ]
   },
   {
@@ -119,8 +164,6 @@ export const Eras: React.FC = () => {
   
   const { setTheme } = useTheme();
   const cardRefs = useRef<Map<ThemeEra, HTMLDivElement>>(new Map());
-  const modalRef = useRef<HTMLDivElement>(null);
-  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   const activeEraData = erasData.find(e => e.id === expandedEraId);
 
@@ -135,26 +178,23 @@ export const Eras: React.FC = () => {
       setExpandedEraId(era.id);
       setTheme(era.id);
       setIsAnimating(true);
-      // Allow animation to complete before removing animation lock (if needed)
       setTimeout(() => setIsAnimating(false), 800);
     }
   };
 
   const handleClose = useCallback(() => {
     setIsAnimating(true);
-    // Find the current card to animate back to
     const el = expandedEraId ? cardRefs.current.get(expandedEraId) : null;
     if (el) {
         const rect = el.getBoundingClientRect();
-        setActiveRect(rect); // Update rect for reverse animation destination
+        setActiveRect(rect);
     }
     
-    // Slight delay to allow state update to trigger close animation logic in modal
     setTimeout(() => {
       setExpandedEraId(null);
       setTheme('default');
       setIsAnimating(false);
-    }, 500); // Wait for transition
+    }, 500);
   }, [expandedEraId, setTheme]);
 
   const handleNextEra = useCallback(() => {
@@ -163,22 +203,17 @@ export const Eras: React.FC = () => {
     const nextIndex = (currentIndex + 1) % erasData.length;
     const nextEra = erasData[nextIndex];
 
-    // Close current
     handleClose();
 
-    // Small delay to allow close animation to start, then trigger next open
-    // This is the "chained" transition
     setTimeout(() => {
         handleCardClick(nextEra);
     }, 600);
   }, [expandedEraId, handleClose]);
 
-  // Lock scroll
   useEffect(() => {
     document.body.style.overflow = expandedEraId ? 'hidden' : '';
   }, [expandedEraId]);
 
-  // Keyboard trap & shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!expandedEraId) return;
@@ -206,20 +241,36 @@ export const Eras: React.FC = () => {
               role="button"
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(era); }}
-              className={`group relative h-48 md:h-64 w-full rounded-3xl overflow-hidden cursor-pointer border border-white/10 hover:border-white/30 transition-all duration-500 shadow-lg hover:shadow-2xl hover:scale-[1.02]
+              className={`group relative h-48 md:h-64 w-full rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 shadow-lg hover:scale-[1.02]
                 ${expandedEraId === era.id ? 'opacity-0' : 'opacity-100'} 
+                ${era.id === 'glacial' 
+                    ? 'border-2 border-cyan-400/50 hover:border-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:shadow-[0_0_40px_rgba(34,211,238,0.4)]' 
+                    : 'border border-white/10 hover:border-white/30 hover:shadow-2xl'}
               `}
               aria-expanded={expandedEraId === era.id}
             >
+              {/* Card Snow Effect (Mini) */}
+              {era.id === 'glacial' && (
+                 <div className="absolute inset-0 z-20 pointer-events-none opacity-50">
+                    <div className="absolute top-2 left-10 text-white animate-pulse">❄</div>
+                    <div className="absolute top-10 right-20 text-white animate-pulse delay-700">❄</div>
+                    <div className="absolute bottom-5 left-1/2 text-white animate-pulse delay-300">❄</div>
+                 </div>
+              )}
+
               {/* Background Image */}
               <div className="absolute inset-0">
                 <img 
                   src={era.image} 
                   alt={era.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-40"
+                  className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:opacity-40
+                    ${era.id === 'glacial' ? 'opacity-70 filter brightness-125 saturate-50' : 'opacity-60'}
+                  `}
                   loading="lazy"
                 />
                 <div className={`absolute inset-0 bg-gradient-to-r ${era.color.replace('bg-', 'from-')} to-transparent opacity-80`}></div>
+                {/* Icy Overlay for Glacial */}
+                {era.id === 'glacial' && <div className="absolute inset-0 bg-cyan-900/20 mix-blend-overlay"></div>}
               </div>
 
               {/* Card Content */}
@@ -231,6 +282,7 @@ export const Eras: React.FC = () => {
                   </div>
                   <h3 className={`text-3xl md:text-5xl font-bold text-white mb-2
                      ${era.id === 'medieval' ? 'font-medieval' : era.id === 'futuristic' ? 'font-future uppercase' : 'font-display'}
+                     ${era.id === 'glacial' ? 'drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]' : ''}
                   `}>
                     {era.title}
                   </h3>
@@ -310,7 +362,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
 
     // Theme Specific Classes
     const containerClasses = `
-        ${era.id === 'glacial' ? 'bg-slate-900/90 backdrop-blur-xl' : 
+        ${era.id === 'glacial' ? 'bg-slate-900/95 backdrop-blur-xl border-4 border-cyan-500/30' : 
           era.id === 'medieval' ? 'bg-[#2a1b15] parchment-texture' : 
           'bg-black cyber-grid'}
     `;
@@ -318,26 +370,24 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
     return (
         <div 
             style={style} 
-            className={`${containerClasses} flex flex-col shadow-2xl`}
+            className={`${containerClasses} flex flex-col shadow-2xl relative`}
             role="dialog"
             aria-modal="true"
         >
-            {/* Background Effects */}
-            {era.id === 'glacial' && (
-                <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] animate-pulse"></div>
-            )}
+            {/* Background Effects - Snowfall for Glacial */}
+            {era.id === 'glacial' && <SnowOverlay />}
 
             {/* Close Button */}
             <button 
                 onClick={onClose}
-                className="absolute top-4 right-4 z-50 p-2 rounded-full bg-black/20 text-white hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                className="absolute top-4 right-4 z-50 p-2 rounded-full bg-black/40 text-white hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white border border-white/10"
                 autoFocus
             >
                 <X size={32} />
             </button>
 
             {/* Content Container - Only visible after expansion starts */}
-            <div className={`flex-1 overflow-y-auto no-scrollbar relative transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`flex-1 overflow-y-auto no-scrollbar relative transition-opacity duration-500 z-40 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
                 
                 {/* Hero Banner inside Modal */}
                 <div className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden">
@@ -345,10 +395,12 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
                         src={era.image} 
                         alt={era.title} 
                         className={`w-full h-full object-cover 
-                            ${era.id === 'glacial' ? 'animate-frost-reveal' : 'animate-fade-in'}
+                            ${era.id === 'glacial' ? 'animate-frost-reveal filter brightness-110 saturate-50' : 'animate-fade-in'}
                         `}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                    {/* Extra Frost Overlay on Image */}
+                    {era.id === 'glacial' && <div className="absolute inset-0 bg-cyan-500/10 mix-blend-overlay"></div>}
                     
                     <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
                         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4 bg-black/50 backdrop-blur-sm border border-white/10 ${era.textColor}`}>
@@ -356,7 +408,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
                             {era.subtitle}
                         </div>
                         <h1 className={`text-5xl md:text-8xl font-bold text-white mb-4 leading-none
-                            ${era.id === 'glacial' ? 'font-display animate-frost-break' : 
+                            ${era.id === 'glacial' ? 'font-display animate-frost-break drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]' : 
                               era.id === 'medieval' ? 'font-medieval' : 'font-future uppercase'}
                         `}>
                             {era.title}
@@ -376,7 +428,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
                         {/* Main Description */}
                         <div className="lg:col-span-2 space-y-8">
                             <p className={`text-xl leading-relaxed
-                                ${era.id === 'glacial' ? 'text-blue-100 font-light' : 
+                                ${era.id === 'glacial' ? 'text-cyan-50 font-light drop-shadow-sm' : 
                                   era.id === 'medieval' ? 'text-[#5c4033] font-serif' : 
                                   'text-slate-300 font-mono'}
                             `}>
@@ -388,7 +440,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
                                 <h3 className={`text-2xl font-bold mb-6 ${era.id === 'medieval' ? 'text-[#5c4033]' : 'text-white'}`}>Atrações Principais</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {era.attractionsList.map((attr, idx) => (
-                                        <div key={idx} className="bg-white/5 rounded-xl overflow-hidden hover:bg-white/10 transition-colors border border-white/10 group">
+                                        <div key={idx} className="bg-white/5 rounded-xl overflow-hidden hover:bg-white/10 transition-colors border border-white/10 group backdrop-blur-sm">
                                             <div className="h-32 overflow-hidden">
                                                 <img src={attr.image} alt={attr.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             </div>
@@ -409,7 +461,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
                                         <img 
                                             key={idx} 
                                             src={img} 
-                                            className="h-48 rounded-lg snap-center shadow-lg hover:scale-[1.02] transition-transform" 
+                                            className="h-48 rounded-lg snap-center shadow-lg hover:scale-[1.02] transition-transform border border-white/10" 
                                             alt="Gallery" 
                                         />
                                     ))}
@@ -419,7 +471,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
 
                         {/* Sidebar / Actions */}
                         <div className="space-y-6">
-                            <div className={`p-6 rounded-2xl border ${era.id === 'medieval' ? 'bg-[#5c4033]/10 border-[#5c4033]/20' : 'bg-white/5 border-white/10'}`}>
+                            <div className={`p-6 rounded-2xl border backdrop-blur-md ${era.id === 'medieval' ? 'bg-[#5c4033]/10 border-[#5c4033]/20' : 'bg-white/5 border-white/10'}`}>
                                 <h3 className={`text-xl font-bold mb-4 ${era.id === 'medieval' ? 'text-[#5c4033]' : 'text-white'}`}>Planeje sua visita</h3>
                                 <ul className="space-y-3 mb-6">
                                     {era.details.map((detail, idx) => (
