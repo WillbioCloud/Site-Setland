@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from './Button';
 import { ChevronDown, Snowflake, Crown, Cpu } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { ThemeEra } from '../types';
 
 interface HeroProps {
   onOpenTickets: () => void;
@@ -34,7 +33,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
           tagline: 'O REINO DE GELO ETERNO',
           headline: 'A ERA GLACIAL',
           sub: 'Enfrente ventos congelantes e descubra criaturas titânicas sob o gelo.',
-          video: 'https://cdn.coverr.co/videos/coverr-flying-over-snowy-mountains-2849/1080p.mp4', // Free sample
+          video: 'https://cdn.coverr.co/videos/coverr-flying-over-snowy-mountains-2849/1080p.mp4',
           bgClass: 'bg-glacial-base'
         };
       case 'medieval':
@@ -104,18 +103,49 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
         )}
       </div>
 
-      {/* Theme Switcher for Prototype */}
-      <div className="absolute top-24 md:top-8 right-4 md:right-8 z-30 flex flex-col gap-2">
-        <span className="text-xs font-bold text-white/50 uppercase text-right">Mudar Tema</span>
-        <div className="flex gap-2">
-          <button onClick={() => setTheme('glacial')} className={`p-2 rounded-full backdrop-blur-md border transition-all ${currentTheme === 'glacial' ? 'bg-glacial-accent text-slate-900 border-glacial-accent' : 'bg-black/30 text-white border-white/20'}`} title="Glacial">
-            <Snowflake size={20} />
+      {/* Theme Switcher - Reposicionado e Vertical */}
+      <div className="absolute top-1/2 right-4 md:right-8 -translate-y-1/2 z-30 flex flex-col items-center gap-4 bg-black/20 p-3 rounded-full backdrop-blur-md border border-white/10 shadow-2xl">
+        <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest [writing-mode:vertical-rl] rotate-180 py-2">
+          Temas
+        </span>
+        <div className="flex flex-col gap-4">
+          <button 
+            onClick={() => setTheme('glacial')} 
+            className={`p-3 rounded-full transition-all duration-300 shadow-lg group relative
+              ${currentTheme === 'glacial' ? 'bg-cyan-400 text-slate-900 scale-125 ring-4 ring-cyan-400/30' : 'bg-slate-700 text-cyan-400 hover:bg-cyan-950 hover:scale-110'}
+            `} 
+            title="Era Glacial"
+          >
+            <Snowflake size={24} />
+            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Era Glacial
+            </span>
           </button>
-          <button onClick={() => setTheme('medieval')} className={`p-2 rounded-full backdrop-blur-md border transition-all ${currentTheme === 'medieval' ? 'bg-medieval-accent text-medieval-base border-medieval-accent' : 'bg-black/30 text-white border-white/20'}`} title="Medieval">
-            <Crown size={20} />
+
+          <button 
+            onClick={() => setTheme('medieval')} 
+            className={`p-3 rounded-full transition-all duration-300 shadow-lg group relative
+              ${currentTheme === 'medieval' ? 'bg-amber-500 text-amber-950 scale-125 ring-4 ring-amber-500/30' : 'bg-slate-700 text-amber-500 hover:bg-amber-950 hover:scale-110'}
+            `} 
+            title="Era Medieval"
+          >
+            <Crown size={24} />
+            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Era Medieval
+            </span>
           </button>
-          <button onClick={() => setTheme('futuristic')} className={`p-2 rounded-full backdrop-blur-md border transition-all ${currentTheme === 'futuristic' ? 'bg-future-neon text-white border-future-neon shadow-[0_0_10px_#d946ef]' : 'bg-black/30 text-white border-white/20'}`} title="Futurístico">
-            <Cpu size={20} />
+
+          <button 
+            onClick={() => setTheme('futuristic')} 
+            className={`p-3 rounded-full transition-all duration-300 shadow-lg group relative
+              ${currentTheme === 'futuristic' ? 'bg-fuchsia-500 text-white scale-125 ring-4 ring-fuchsia-500/30' : 'bg-slate-700 text-fuchsia-500 hover:bg-fuchsia-950 hover:scale-110'}
+            `} 
+            title="Era Futurística"
+          >
+            <Cpu size={24} />
+            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Era Futurística
+            </span>
           </button>
         </div>
       </div>

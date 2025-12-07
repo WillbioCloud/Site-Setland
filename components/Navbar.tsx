@@ -10,7 +10,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { currentTheme } = useTheme();
+  const { currentTheme, setTheme } = useTheme(); // Adicionado setTheme aqui
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,12 +24,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
     { name: 'O Parque', href: '#hero' },
     { name: '3 Eras', href: '#eras' },
     { name: 'Atrações', href: '#atracoes' },
-    { name: 'Alimentação', href: '#menu' },
+    { name: 'Cardápio', href: '#menu' },
     { name: 'Contato', href: '#contato' },
   ];
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
+    
+    // Se for para o topo (Hero), reseta o tema para o padrão
+    if (id === '#hero') {
+      setTheme('default');
+    }
+
     const element = document.querySelector(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -57,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
       <div className="container mx-auto px-4 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollTo('#hero')}>
-          <div className={`text-2xl font-black tracking-tighter text-white ${currentTheme === 'medieval' ? 'font-medieval' : currentTheme === 'futuristic' ? 'font-future italic' : 'font-display'}`}>
+          <div className={`text-2xl font-black tracking-tighter text-white drop-shadow-md ${currentTheme === 'medieval' ? 'font-medieval' : currentTheme === 'futuristic' ? 'font-future italic' : 'font-display'}`}>
             SET<span className={logoColor}>LAND</span>
           </div>
         </div>
@@ -68,10 +74,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
             <button 
               key={link.name} 
               onClick={() => scrollTo(link.href)}
-              className={`text-sm font-semibold transition-colors uppercase tracking-wide relative group
+              className={`text-sm font-bold transition-colors uppercase tracking-wide relative group drop-shadow-sm
                 ${currentTheme === 'medieval' ? 'font-medieval text-medieval-paper hover:text-medieval-accent' : 
                   currentTheme === 'futuristic' ? 'font-mono text-future-cyan hover:text-white' : 
-                  'text-slate-300 hover:text-white'}
+                  'text-white hover:text-accent'} 
               `}
             >
               {link.name}
@@ -87,9 +93,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
-          <div className={`flex gap-2 ${currentTheme === 'medieval' ? 'text-medieval-paper' : 'text-slate-400'}`}>
-             <a href="#" className="hover:text-white transition-colors"><Instagram size={20} /></a>
-             <a href="#" className="hover:text-white transition-colors"><Facebook size={20} /></a>
+          <div className={`flex gap-2 ${currentTheme === 'medieval' ? 'text-medieval-paper' : 'text-white'}`}>
+             <a href="#" className="hover:text-accent transition-colors drop-shadow-sm"><Instagram size={20} /></a>
+             <a href="#" className="hover:text-accent transition-colors drop-shadow-sm"><Facebook size={20} /></a>
           </div>
           <Button size="sm" onClick={onOpenTickets}>
             {currentTheme === 'futuristic' ? 'GET_ACCESS' : 'Ingressos'}
@@ -98,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
 
         {/* Mobile Toggle */}
         <button 
-          className="md:hidden text-white"
+          className="md:hidden text-white drop-shadow-md"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -117,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
             <button 
               key={link.name} 
               onClick={() => scrollTo(link.href)}
-              className="text-left text-lg font-semibold text-slate-300 hover:text-white py-2 border-b border-slate-800"
+              className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10"
             >
               {link.name}
             </button>
