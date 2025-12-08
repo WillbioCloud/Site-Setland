@@ -26,7 +26,7 @@ const menuData: MenuCategory[] = [
     id: 'couvert',
     title: 'Couvert',
     icon: <span className="text-lg">🥖</span>,
-    image: 'https://images.unsplash.com/photo-1541592106381-b31e9674c96b?q=80&w=800&auto=format&fit=crop',
+    image: '../assets/entradas.jpg',
     items: [
       { name: 'PÃO ÁZIMO', price: 'R$ 7,77', description: 'Com manteiga de erva e caponata de berinjela.' },
     ]
@@ -124,7 +124,7 @@ const menuData: MenuCategory[] = [
     id: 'suinos',
     title: 'Suínos',
     icon: <span className="text-lg">🥓</span>,
-    image: 'https://images.unsplash.com/photo-1624856012373-c40d99bc2d2e?q=80&w=800&auto=format&fit=crop',
+    image: '../assets/suinos.jpg',
     items: [
       { name: 'LEITÃO ASSADO COM ERVAS', price: 'R$ 127,77', description: 'Arroz branco, mandioca frita, legumes assados, abóbora, batata, banana da terra, batata doce, farofa brasil e vinagrete.' },
       { name: 'COSTELINHA SUÍNA', price: 'R$ 127,77', description: 'Arroz branco, batata frita, farofa brasil, vinagrete e molho barbecue.' },
@@ -230,8 +230,8 @@ const menuData: MenuCategory[] = [
   {
     id: 'espumantes',
     title: 'Espumantes',
-    icon: <PartyPopper size={18} />,
-    image: 'https://images.unsplash.com/photo-1598155523122-3842334d6c10?q=80&w=800&auto=format&fit=crop',
+    icon: <PartyPopper size={20} />,
+    image: '../assets/espumantes.png',
     items: [
       { name: 'BRUT CASA PERINI', price: 'R$ 77,77' },
       { name: 'PROSECCO CASA PERINI', price: 'R$ 87,77' },
@@ -263,7 +263,7 @@ const menuData: MenuCategory[] = [
     id: 'destilados',
     title: 'Destilados',
     icon: <span className="text-lg">🥃</span>,
-    image: 'https://images.unsplash.com/photo-1566918667856-11eb3974d026?q=80&w=800&auto=format&fit=crop',
+    image: '../assets/destilados.jpg',
     items: [
       { name: 'OLD PAR (Whisky)', price: 'R$ 20,77' },
       { name: 'JACK DANIELS (Whisky)', price: 'R$ 20,77' },
