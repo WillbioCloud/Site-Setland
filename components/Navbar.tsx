@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, Facebook, Instagram } from 'lucide-react';
 import { Button } from './Button';
 import { useTheme } from '../context/ThemeContext';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   onOpenTickets: () => void;
@@ -10,7 +11,10 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { currentTheme, setTheme } = useTheme(); // Adicionado setTheme aqui
+  const { currentTheme, setTheme } = useTheme();
+  
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,25 +24,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { name: 'O Parque', href: '#hero' },
-    { name: '3 Eras', href: '#eras' },
-    { name: 'Atrações', href: '#atracoes' },
-    { name: 'Cardápio', href: '#menu' },
-    { name: 'Contato', href: '#contato' },
-  ];
-
-  const scrollTo = (id: string) => {
+  const handleNavigation = (target: string) => {
     setMobileMenuOpen(false);
-    
-    // Se for para o topo (Hero), reseta o tema para o padrão
-    if (id === '#hero') {
-      setTheme('default');
-    }
 
-    const element = document.querySelector(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (target.startsWith('#')) {
+      // Se estamos na Home, rola até a seção
+      if (location.pathname === '/') {
+        if (target === '#hero') setTheme('default'); // Reseta tema se for para o topo
+        const element = document.querySelector(target);
+        element?.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        // Se estamos em outra página (ex: /cardapio), vai para a home e depois rola
+        setTheme('default');
+        navigate('/');
+        // Pequeno delay para a página carregar antes de rolar
+        setTimeout(() => {
+          const element = document.querySelector(target);
+          element?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    } else {
+      // Navegação para outra página (ex: /cardapio)
+      navigate(target);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -62,7 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollTo('#hero')}>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleNavigation('#hero')}>
           <div className={`text-2xl font-black tracking-tighter text-white drop-shadow-md ${currentTheme === 'medieval' ? 'font-medieval' : currentTheme === 'futuristic' ? 'font-future italic' : 'font-display'}`}>
             SET<span className={logoColor}>LAND</span>
           </div>
@@ -70,25 +78,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <button 
-              key={link.name} 
-              onClick={() => scrollTo(link.href)}
-              className={`text-sm font-bold transition-colors uppercase tracking-wide relative group drop-shadow-sm
-                ${currentTheme === 'medieval' ? 'font-medieval text-medieval-paper hover:text-medieval-accent' : 
-                  currentTheme === 'futuristic' ? 'font-mono text-future-cyan hover:text-white' : 
-                  'text-white hover:text-accent'} 
-              `}
-            >
-              {link.name}
-              <span className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full
-                 ${currentTheme === 'glacial' ? 'bg-glacial-accent' : 
-                   currentTheme === 'medieval' ? 'bg-medieval-accent' : 
-                   currentTheme === 'futuristic' ? 'bg-future-neon' : 
-                   'bg-accent'}
-              `}></span>
-            </button>
-          ))}
+          <button onClick={() => handleNavigation('#hero')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">O Parque</button>
+          <button onClick={() => handleNavigation('#eras')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">3 Eras</button>
+          <button onClick={() => handleNavigation('#atracoes')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">Atrações</button>
+          <button onClick={() => handleNavigation('/cardapio')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">Cardápio</button>
+          <button onClick={() => handleNavigation('#contato')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">Contato</button>
         </nav>
 
         {/* Desktop Actions */}
@@ -119,15 +113,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
             currentTheme === 'futuristic' ? 'bg-black' : 
             'bg-slate-900'}
         `}>
-          {navLinks.map((link) => (
-            <button 
-              key={link.name} 
-              onClick={() => scrollTo(link.href)}
-              className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10"
-            >
-              {link.name}
-            </button>
-          ))}
+          <button onClick={() => handleNavigation('#hero')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">O Parque</button>
+          <button onClick={() => handleNavigation('#eras')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">3 Eras</button>
+          <button onClick={() => handleNavigation('#atracoes')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">Atrações</button>
+          <button onClick={() => handleNavigation('/cardapio')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">Cardápio</button>
+          <button onClick={() => handleNavigation('#contato')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">Contato</button>
+          
           <Button fullWidth onClick={() => { setMobileMenuOpen(false); onOpenTickets(); }}>
             Comprar Ingresso
           </Button>
