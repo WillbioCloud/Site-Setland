@@ -22,7 +22,7 @@ const highlights = [
     name: 'Mignon à Parmegiana', 
     description: 'Filé mignon empanado crocante, arroz branco e legumes na manteiga.', 
     price: 'R$ 57,77', 
-    imageUrl: 'https://images.unsplash.com/photo-1599354607476-88b6b067ae2b?q=80&w=600' 
+    imageUrl: '../assets/mignon-parmegiana.jpg'
   },
   { 
     id: '4', 
