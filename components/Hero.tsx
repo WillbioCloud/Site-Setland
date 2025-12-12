@@ -56,7 +56,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
           tagline: 'O MAIOR PARQUE DE CALDAS NOVAS',
           headline: 'DESCUBRA NOVOS MUNDOS',
           sub: 'Uma experiência imersiva através do tempo. Do gelo eterno ao futuro neon.',
-          image: 'https://picsum.photos/seed/theme-park-hero/1920/1080',
+          image: '../assets/castelo-bg.jpg',
           bgClass: 'bg-slate-900'
         };
     }

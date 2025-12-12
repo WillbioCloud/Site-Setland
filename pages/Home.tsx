@@ -28,7 +28,7 @@ export const Home: React.FC<HomeProps> = ({ onOpenTickets }) => {
                   </p>
                   <div className="flex items-center justify-center gap-3">
                     <div className="w-10 h-10 bg-slate-600 rounded-full overflow-hidden">
-                       <img src={`https://picsum.photos/seed/user${i}/100/100`} alt="User" />
+                       <img src='{`https://picsum.photos/seed/user${i}/100/100`}' alt="User" />
                     </div>
                     <div className="text-left">
                       <div className="font-bold text-white text-sm">Maria Silva</div>
