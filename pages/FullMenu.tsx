@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Utensils, Pizza, Wine, Coffee, Beer, 
-  GlassWater, IceCream, Beef, Grape, PartyPopper 
+  Utensils, Pizza, Wine, Beer, 
+  GlassWater, IceCream, Beef, PartyPopper,
+  ChevronLeft, ChevronRight, Zap, Snowflake, Crown,
+  Wheat, Smile, Sandwich, Ham, Drumstick, Fish, Candy, Martini,
+  Coffee, ShoppingBag
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 // --- Interfaces ---
 interface MenuItem {
   name: string;
   price: string;
   description?: string;
-  subCategory?: string; // Para agrupar itens dentro de uma categoria (ex: Whisky, Vodka)
+  subCategory?: string;
 }
 
 interface MenuCategory {
@@ -20,20 +24,21 @@ interface MenuCategory {
   items: MenuItem[];
 }
 
+
 // --- Dados Completos do Cardápio ---
 const menuData: MenuCategory[] = [
   {
     id: 'couvert',
     title: 'Couvert',
-    icon: <span className="text-lg">🥖</span>,
-    image: '../assets/entradas.jpg',
+    icon: <Wheat size={18} />,
+    image: 'https://images.unsplash.com/photo-1541592106381-b31e9674c96b?q=80&w=800&auto=format&fit=crop',
     items: [
       { name: 'PÃO ÁZIMO', price: 'R$ 7,77', description: 'Com manteiga de erva e caponata de berinjela.' },
     ]
   },
   {
     id: 'entradas',
-    title: 'Entradas e Petiscos',
+    title: 'Entradas',
     icon: <Utensils size={18} />,
     image: 'https://images.unsplash.com/photo-1621857426350-ddab819cf0cc?q=80&w=800&auto=format&fit=crop',
     items: [
@@ -55,7 +60,7 @@ const menuData: MenuCategory[] = [
   {
     id: 'kids',
     title: 'Menu Kids',
-    icon: <span className="text-lg">🧸</span>,
+    icon: <Smile size={18} />,
     image: 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?q=80&w=800&auto=format&fit=crop',
     items: [
       { name: 'ESPAGUETE', price: 'R$ 24,77', description: 'Ao molho bolonhesa e queijo.' },
@@ -66,7 +71,7 @@ const menuData: MenuCategory[] = [
   {
     id: 'hamburguer',
     title: 'Hambúrgueres',
-    icon: <span className="text-lg">🍔</span>,
+    icon: <Sandwich size={18} />,
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&auto=format&fit=crop',
     items: [
       { name: 'BIG BURGUER DE FRANGO', price: 'R$ 27,77', description: 'Tirinhas de filé de frango, peito de peru, presunto, tomate, muçarela e batata frita.' },
@@ -76,7 +81,7 @@ const menuData: MenuCategory[] = [
   },
   {
     id: 'pratos',
-    title: 'Pratos Individuais',
+    title: 'Individuais',
     icon: <Utensils size={18} />,
     image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop',
     items: [
@@ -112,7 +117,7 @@ const menuData: MenuCategory[] = [
   {
     id: 'carnes',
     title: 'Carnes Nobres',
-    icon: <span className="text-lg">🥩</span>,
+    icon: <Ham size={18} />,
     image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=800&auto=format&fit=crop',
     items: [
         { name: 'BIFE ANCHO ANGUS', price: 'R$ 147,77', description: 'Legumes assados, abóbora, batata, banana da terra, batata doce e risoto de tomate seco.' },
@@ -133,7 +138,7 @@ const menuData: MenuCategory[] = [
   },
   {
     id: 'bovinos',
-    title: 'Bovinos (2 Pessoas)',
+    title: 'Bovinos (2P)',
     icon: <Beef size={18} />,
     image: 'https://images.unsplash.com/photo-1558030006-47906773d19d?q=80&w=800&auto=format&fit=crop',
     items: [
@@ -146,7 +151,7 @@ const menuData: MenuCategory[] = [
   },
   {
     id: 'aves',
-    title: 'Aves (2 Pessoas)',
+    title: 'Aves (2P)',
     icon: <span className="text-lg">🍗</span>,
     image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?q=80&w=800&auto=format&fit=crop',
     items: [
@@ -187,7 +192,7 @@ const menuData: MenuCategory[] = [
   },
   {
     id: 'pizzas-doces',
-    title: 'Pizzas Mágicas (Doces)',
+    title: 'Pizzas Mágicas',
     icon: <PartyPopper size={18} />,
     image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=800&auto=format&fit=crop',
     items: [
@@ -209,7 +214,7 @@ const menuData: MenuCategory[] = [
   },
   {
     id: 'drinks',
-    title: 'Drinks & Coquetéis',
+    title: 'Drinks',
     icon: <span className="text-lg">🍹</span>,
     image: 'https://images.unsplash.com/photo-1536935338788-843bb6d8d992?q=80&w=800&auto=format&fit=crop',
     items: [
@@ -318,115 +323,309 @@ const menuData: MenuCategory[] = [
 
 export const FullMenu: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('couvert');
+  const { currentTheme } = useTheme();
+  
+  // Refs para controle de scroll e drag
+  const navRef = useRef<HTMLDivElement>(null);
+  const [isDown, setIsDown] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Rola para o topo ao montar a página
+  // Rola para o topo ao carregar
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const scrollToCategory = (catId: string) => {
+  // --- Handlers de Drag (Mouse) ---
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!navRef.current) return;
+    setIsDown(true);
+    setStartX(e.pageX - navRef.current.offsetLeft);
+    setScrollLeft(navRef.current.scrollLeft);
+    // Não seta isDragging true imediatamente para permitir clique
+  };
+
+  const handleMouseLeave = () => {
+    setIsDown(false);
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDown(false);
+    // Pequeno delay para garantir que o clique funcione se foi rápido
+    setTimeout(() => setIsDragging(false), 50);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDown || !navRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - navRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Velocidade do scroll
+    
+    // Só considera "arrastar" se moveu mais de 5 pixels
+    if (Math.abs(walk) > 5) {
+        setIsDragging(true);
+        navRef.current.scrollLeft = scrollLeft - walk;
+    }
+  };
+
+  // --- Navegação por Setas ---
+  const scrollNav = (direction: 'left' | 'right') => {
+    if (navRef.current) {
+        const amount = 300;
+        navRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+    }
+  };
+
+  const handleCategoryClick = (catId: string) => {
+    if (isDragging) return; // Se estiver arrastando, ignora o clique
     setActiveCategory(catId);
     const element = document.getElementById(`cat-${catId}`);
     if (element) {
-      // Ajuste o offset (150px) para compensar o header fixo
-      const y = element.getBoundingClientRect().top + window.scrollY - 150;
+      const y = element.getBoundingClientRect().top + window.scrollY - 180;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
 
+  // --- LÓGICA DE TEMAS ---
+  const isFuture = currentTheme === 'futuristic';
+  const isMedieval = currentTheme === 'medieval';
+  const isGlacial = currentTheme === 'glacial';
+
   return (
-    <section className="pt-32 pb-20 bg-slate-950 min-h-screen">
-      <div className="container mx-auto px-4">
+    <section className={`pt-32 pb-20 min-h-screen w-full overflow-x-hidden transition-colors duration-700 
+      ${isFuture ? 'bg-black' : isMedieval ? 'bg-[#1a110d] parchment-texture' : isGlacial ? 'bg-slate-900' : 'bg-slate-950'}`}>
+      
+      {/* CSS Injetado */}
+      <style>{`
+        .striped-text {
+          background-image: repeating-linear-gradient(180deg, #fff 0, #fff 1px, transparent 2px, transparent 4px);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          text-shadow: 0 0 8px rgba(0, 243, 255, 0.7);
+        }
+        .neon-box {
+          box-shadow: 0 0 5px #00f3ff, inset 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+        .icon-neon {
+            filter: drop-shadow(0 0 3px #00f3ff);
+            color: #00f3ff;
+        }
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+      `}</style>
+
+      <div className="container mx-auto px-4 max-w-full overflow-hidden">
         
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <h2 className="text-4xl md:text-6xl font-display font-black text-white mb-4">
-            Banquetes <span className="text-accent">Reais</span>
-          </h2>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            O verdadeiro sabor da realeza. Uma seleção gastronômica digna de cavaleiros, viajantes do tempo e exploradores glaciais.
-          </p>
+        {/* HEADER DO CARDÁPIO */}
+        <div className="text-center mb-12 animate-fade-in px-2">
+          {isFuture ? (
+            <div className="inline-block transform -skew-x-6 md:-skew-x-12 border-2 border-[#00f3ff] p-4 md:p-6 bg-black/80 neon-box max-w-full">
+                <h2 className="text-3xl sm:text-5xl md:text-7xl font-black italic striped-text font-future m-0 tracking-tighter break-words">
+                  FOOD_SYSTEM
+                </h2>
+                <div className="flex justify-between items-center mt-2 border-t border-[#00f3ff]/50 pt-2">
+                    <span className="text-[#00f3ff] font-mono text-[10px] md:text-xs">SYS.READY</span>
+                    <span className="text-[#ff00ff] font-bold text-xs md:text-sm transform skew-x-6 md:skew-x-12">V.3.0</span>
+                </div>
+            </div>
+          ) : (
+            <>
+                <h2 className={`text-4xl md:text-6xl font-black mb-4 
+                  ${isMedieval ? 'font-medieval text-[#5c4033] drop-shadow-sm' : 'font-display text-white'}`}>
+                  {isMedieval ? 'O Banquete Real' : isGlacial ? 'Sabores do Gelo' : 'Cardápio SetLand'}
+                </h2>
+                <p className={`text-lg max-w-2xl mx-auto 
+                   ${isMedieval ? 'text-[#8b5e3c] font-serif italic' : isGlacial ? 'text-cyan-100' : 'text-slate-400'}`}>
+                   {isMedieval ? 'Iguarias preparadas pelos melhores cozinheiros do reino.' : 'Recupere suas energias para a próxima aventura.'}
+                </p>
+            </>
+          )}
         </div>
 
-        {/* Category Navigation (Sticky) */}
-        <div className="sticky top-24 z-40 bg-slate-950/95 backdrop-blur-md py-4 mb-12 border-b border-slate-800 -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 md:justify-center snap-x">
-            {menuData.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => scrollToCategory(cat.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold whitespace-nowrap transition-all snap-center
-                  ${activeCategory === cat.id 
-                    ? 'bg-accent text-slate-900 shadow-[0_0_15px_rgba(245,158,11,0.4)] scale-105' 
-                    : 'bg-slate-900 text-slate-400 border border-slate-800 hover:border-accent hover:text-white'}
-                `}
-              >
-                {cat.icon}
-                {cat.title}
-              </button>
-            ))}
+        {/* --- NAVEGAÇÃO DE CATEGORIAS (STICKY & DRAGGABLE) --- */}
+        <div className={`sticky top-20 z-40 py-4 mb-16 transition-all backdrop-blur-md border-y w-screen -ml-4 px-4
+            ${isFuture ? 'bg-black/90 border-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.2)]' : 
+              isMedieval ? 'bg-[#f5e6d3]/95 border-[#5c4033] shadow-md' : 
+              'bg-slate-900/90 border-white/10'
+            }
+        `}>
+          <div className="relative max-w-7xl mx-auto flex items-center">
+            
+            {/* Seta Esquerda (Apenas Desktop) */}
+            <button onClick={() => scrollNav('left')} className={`hidden md:block p-2 rounded-full transition z-10 
+                ${isFuture ? 'text-[#00f3ff] hover:bg-[#00f3ff]/20' : 
+                  isMedieval ? 'text-[#5c4033] hover:bg-[#5c4033]/10' : 
+                  'text-white hover:bg-white/20'}`}>
+                <ChevronLeft size={32} />
+            </button>
+
+            {/* Lista Scrollável */}
+            <div 
+                ref={navRef}
+                className="flex gap-4 overflow-x-auto hide-scroll scroll-smooth px-4 w-full cursor-grab active:cursor-grabbing select-none py-2"
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+            >
+              {menuData.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryClick(cat.id)}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 font-bold transition-all duration-300 text-sm md:text-base
+                    ${isFuture 
+                        ? `uppercase font-future tracking-widest border border-[#00f3ff] skew-x-[-10deg]
+                           ${activeCategory === cat.id ? 'bg-[#00f3ff] text-black shadow-[0_0_15px_#00f3ff]' : 'text-[#00f3ff] bg-transparent hover:bg-[#00f3ff]/10'}`
+                        : isMedieval
+                        ? `rounded-lg font-medieval tracking-wider border-2
+                           ${activeCategory === cat.id ? 'bg-[#5c4033] text-[#f5e6d3] border-[#5c4033]' : 'bg-transparent text-[#5c4033] border-[#5c4033]/50 hover:border-[#5c4033]'}`
+                        : `rounded-full whitespace-nowrap 
+                           ${activeCategory === cat.id ? 'bg-accent text-slate-900 scale-105 shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-accent hover:text-white'}`
+                    }
+                  `}
+                >
+                  <span className={`${isFuture ? "transform skew-x-[10deg] flex items-center" : "flex items-center"}`}>
+                    {/* Renderiza o ícone com classe neon se for futurista, senão ícone normal */}
+                    <span className={`${isFuture ? 'icon-neon mr-2' : 'mr-2'}`}>
+                        {cat.icon}
+                    </span>
+                    <span>{isFuture ? cat.title.toUpperCase() : cat.title}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Seta Direita (Apenas Desktop) */}
+            <button onClick={() => scrollNav('right')} className={`hidden md:block p-2 rounded-full transition z-10 
+                ${isFuture ? 'text-[#00f3ff] hover:bg-[#00f3ff]/20' : 
+                  isMedieval ? 'text-[#5c4033] hover:bg-[#5c4033]/10' : 
+                  'text-white hover:bg-white/20'}`}>
+                <ChevronRight size={32} />
+            </button>
           </div>
         </div>
 
-        {/* Menu Content */}
-        <div className="space-y-24">
+        {/* --- CONTEÚDO --- */}
+        <div className="space-y-32 max-w-6xl mx-auto pb-12">
           {menuData.map((category) => (
-            <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-48 animate-slide-up">
+            <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-64">
               
-              <div className="flex flex-col md:flex-row gap-8 mb-8 items-end">
-                 <div className="w-full md:w-1/3">
-                    <div className="relative h-48 rounded-2xl overflow-hidden shadow-2xl border border-slate-800 group">
-                        <img 
-                            src={category.image} 
-                            alt={category.title} 
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
-                        <h3 className="absolute bottom-4 left-6 text-3xl font-display font-bold text-white drop-shadow-md">
-                            {category.title}
-                        </h3>
-                    </div>
-                 </div>
-                 <div className="w-full md:w-2/3 pb-4">
-                    <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-accent w-24"></div>
-                    </div>
-                 </div>
-              </div>
+              {/* --- LAYOUT FUTURISTA (CYBERPUNK) --- */}
+              {isFuture ? (
+                <div className="relative border-2 border-[#00f3ff] bg-black/90 p-1 mb-8 shadow-[0_0_20px_rgba(0,243,255,0.15)] mx-2 md:mx-0">
+                    {/* Cantoneiras */}
+                    <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-[#ff00ff] z-10"></div>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-[#ff00ff] z-10"></div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                {category.items.map((item, idx) => (
-                  <div key={idx} className="group">
-                    <div className="flex items-baseline justify-between mb-1">
-                      <span className="font-bold text-white text-lg tracking-wide group-hover:text-accent transition-colors">
-                        {item.name}
-                      </span>
-                      
-                      {/* Dotted Line */}
-                      <div className="flex-1 mx-4 border-b-2 border-dotted border-slate-700 h-1 opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                      
-                      <span className="font-bold text-accent text-lg whitespace-nowrap">
-                        {item.price}
-                      </span>
+                    {/* Cabeçalho */}
+                    <div className="bg-[#00f3ff]/10 p-4 md:p-6 border-b border-[#00f3ff] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 border border-[#00f3ff] bg-black icon-neon">
+                                {category.icon}
+                            </div>
+                            <h3 className="text-3xl md:text-5xl font-black font-future italic text-white striped-text tracking-widest break-all">
+                                {category.title.toUpperCase()}
+                            </h3>
+                        </div>
+                        <div className="hidden md:flex gap-1">
+                            {[1,2,3].map(i => <div key={i} className={`w-8 h-2 bg-[#00f3ff] opacity-${i*30}`}></div>)}
+                        </div>
                     </div>
-                    {item.description && (
-                      <p className="text-slate-500 text-sm font-light leading-relaxed">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
+
+                    {/* Itens Grid */}
+                    <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 bg-[linear-gradient(0deg,rgba(0,243,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]">
+                        {category.items.map((item, idx) => (
+                            <div key={idx} className="group relative pl-4 hover:pl-6 transition-all duration-300">
+                                {/* Marcador lateral */}
+                                <div className="absolute left-0 top-1 w-1 h-full bg-[#333] group-hover:bg-[#ff00ff] transition-colors"></div>
+                                
+                                <div className="flex justify-between items-baseline border-b border-dashed border-[#333] pb-2 group-hover:border-[#00f3ff]/50">
+                                    <span className="text-[#00f3ff] font-future tracking-wider text-base md:text-lg group-hover:text-white transition-colors">
+                                        {item.name}
+                                    </span>
+                                    <span className="text-white font-mono text-lg md:text-xl drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] whitespace-nowrap ml-2">
+                                        {item.price}
+                                    </span>
+                                </div>
+                                {item.description && (
+                                    <p className="text-gray-500 text-[10px] md:text-xs font-mono mt-1 uppercase tracking-tight">{item.description}</p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+              ) : (
+                
+              /* --- LAYOUT PADRÃO / MEDIEVAL / GLACIAL --- */
+                <div className="animate-slide-up">
+                    <div className="flex flex-col md:flex-row gap-8 mb-10 items-end">
+                        <div className="w-full md:w-1/3 px-4 md:px-0">
+                            <div className={`relative h-48 md:h-56 rounded-2xl overflow-hidden shadow-2xl group border-4
+                                ${isMedieval ? 'border-[#5c4033] rounded-b-lg' : isGlacial ? 'border-cyan-400/50 rounded-2xl' : 'border-slate-700 rounded-2xl'}`}>
+                                <img src={category.image} alt={category.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${isMedieval ? 'sepia-[.4]' : ''}`} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                <div className="absolute bottom-0 left-0 w-full p-4 text-center">
+                                    <h3 className={`text-2xl md:text-3xl font-bold text-white 
+                                        ${isMedieval ? 'font-medieval tracking-[0.2em] text-[#fbbf24] drop-shadow-md' : 'font-display'}`}>
+                                        {category.title}
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="w-full md:w-2/3 px-2">
+                            {/* Decorator Line */}
+                            <div className={`h-1 w-full mb-8 rounded-full ${isMedieval ? 'bg-[#5c4033]' : 'bg-slate-800'}`}></div>
+                            
+                            <div className="grid grid-cols-1 gap-y-6">
+                                {category.items.map((item, idx) => (
+                                <div key={idx} className="group flex flex-col">
+                                    <div className="flex items-baseline justify-between">
+                                        <span className={`font-bold text-lg md:text-xl tracking-wide transition-colors
+                                            ${isMedieval ? 'text-[#451a03] font-medieval' : 'text-slate-100'}`}>
+                                            {item.name}
+                                        </span>
+                                        
+                                        {/* Linha pontilhada conectora */}
+                                        <div className={`flex-1 mx-2 md:mx-4 border-b-2 border-dotted mb-1 opacity-40
+                                            ${isMedieval ? 'border-[#5c4033]' : 'border-white'}`}></div>
+                                        
+                                        <span className={`font-bold text-lg md:text-xl whitespace-nowrap
+                                            ${isMedieval ? 'text-[#854d0e] font-serif' : 'text-accent'}`}>
+                                            {item.price}
+                                        </span>
+                                    </div>
+                                    {item.description && (
+                                        <p className={`text-xs md:text-sm mt-1
+                                            ${isMedieval ? 'text-[#5c4033]/80 italic font-serif' : 'text-slate-400'}`}>
+                                            {item.description}
+                                        </p>
+                                    )}
+                                </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              )}
 
             </div>
           ))}
         </div>
 
         {/* Footer Note */}
-        <div className="mt-24 pt-12 border-t border-slate-800 text-center text-slate-500 text-sm">
+        <div className={`mt-32 pt-12 border-t text-center text-sm opacity-60
+            ${isFuture ? 'border-[#00f3ff] text-[#00f3ff] font-mono' : isMedieval ? 'border-[#5c4033] text-[#5c4033]' : 'border-slate-800 text-slate-500'}`}>
             <p className="mb-2">* Imagens meramente ilustrativas.</p>
             <p>Se beber, não dirija. Venda proibida para menores de 18 anos.</p>
-            <p className="mt-4 text-accent/50 italic">Cobramos taxa de serviço de 10% (opcional).</p>
+            <p className="mt-4 italic">Cobramos taxa de serviço de 10% (opcional).</p>
         </div>
 
       </div>
