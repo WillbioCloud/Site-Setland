@@ -31,7 +31,7 @@ const menuData: MenuCategory[] = [
     id: 'couvert',
     title: 'Couvert',
     icon: <Wheat size={18} />,
-    image: 'https://images.unsplash.com/photo-1541592106381-b31e9674c96b?q=80&w=800&auto=format&fit=crop',
+    image: '../assets/entradas.jpg',
     items: [
       { name: 'PÃO ÁZIMO', price: 'R$ 7,77', description: 'Com manteiga de erva e caponata de berinjela.' },
     ]
@@ -328,8 +328,9 @@ export const FullMenu: React.FC = () => {
   // Refs
   const navRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  // Estados de Drag
+  // Estados de Drag da Navbar
   const [isDown, setIsDown] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -338,11 +339,32 @@ export const FullMenu: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    return () => audioCtxRef.current?.close();
+    
+    // ScrollSpy para detectar qual categoria está visível
+    const handleScroll = () => {
+        const scrollPosition = window.scrollY + 250; // Offset para o meio da tela
+
+        for (const cat of menuData) {
+            const element = document.getElementById(`cat-${cat.id}`);
+            if (element) {
+                const { offsetTop, offsetHeight } = element;
+                if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+                    setActiveCategory(cat.id);
+                    break; 
+                }
+            }
+        }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+        audioCtxRef.current?.close();
+    };
   }, []);
 
   // --- Áudio ---
-  const playHoverSound = () => {
+  const playHoverSound = (type: 'hover' | 'click' = 'hover') => {
     if (!audioCtxRef.current) return;
     if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
 
@@ -355,21 +377,29 @@ export const FullMenu: React.FC = () => {
     const now = ctx.currentTime;
     
     if (currentTheme === 'futuristic') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(800, now);
-        osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+        osc.type = type === 'click' ? 'sawtooth' : 'square';
+        const freq = type === 'click' ? 150 : 800;
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(type === 'click' ? 50 : 300, now + 0.1);
         gainNode.gain.setValueAtTime(0.05, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + (type === 'click' ? 0.2 : 0.1));
         osc.start(now);
-        osc.stop(now + 0.1);
+        osc.stop(now + (type === 'click' ? 0.2 : 0.1));
     } else if (currentTheme === 'medieval') {
-        // Som de "papel" ou "madeira" leve
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(100, now);
         gainNode.gain.setValueAtTime(0.1, now);
         gainNode.gain.linearRampToValueAtTime(0.001, now + 0.05);
         osc.start(now);
         osc.stop(now + 0.05);
+    } else if (currentTheme === 'glacial') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1500, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1); 
+        gainNode.gain.setValueAtTime(0.05, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
     } else {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(600, now);
@@ -402,9 +432,10 @@ export const FullMenu: React.FC = () => {
         navRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
     }
   };
+  
   const handleCategoryClick = (catId: string) => {
     if (isDragging) return; 
-    playHoverSound();
+    playHoverSound('click');
     setActiveCategory(catId);
     const element = document.getElementById(`cat-${catId}`);
     if (element) {
@@ -420,7 +451,7 @@ export const FullMenu: React.FC = () => {
 
   return (
     <section className={`pt-32 pb-20 min-h-screen w-full overflow-x-hidden transition-colors duration-700 
-      ${isFuture ? 'bg-black' : isMedieval ? 'bg-[#eaddcf]' : isGlacial ? 'bg-slate-900' : 'bg-slate-950'}`}>
+      ${isFuture ? 'bg-black' : isMedieval ? 'bg-[#eaddcf]' : isGlacial ? 'bg-gradient-to-b from-[#e0f2fe] to-[#f0f9ff]' : 'bg-slate-950'}`}>
       
       <style>{`
         .striped-text {
@@ -436,14 +467,6 @@ export const FullMenu: React.FC = () => {
         
         /* Medieval Specific */
         .medieval-font-title { font-family: 'Cinzel', serif; }
-        .medieval-drop-cap::first-letter {
-            font-size: 2.5rem;
-            float: left;
-            margin-right: 0.5rem;
-            line-height: 0.8;
-            color: #800000;
-            font-family: 'Cinzel', serif;
-        }
         .parchment-pattern {
             background-color: #eaddcf;
             background-image: url("https://www.transparenttextures.com/patterns/aged-paper.png");
@@ -453,9 +476,43 @@ export const FullMenu: React.FC = () => {
             outline: 2px solid #800000;
             outline-offset: 4px;
         }
-      `}</style>
 
-      <div className="container mx-auto px-4 max-w-full overflow-hidden">
+        /* Glacial Specific */
+        .ice-pattern {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(165, 243, 252, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+        .frost-texture {
+            background-image: url("https://www.transparenttextures.com/patterns/snow.png");
+            opacity: 0.4;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .animate-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+            pointer-events: none;
+        }
+
+        /* Future Animations */
+        @keyframes scan-vertical {
+            0% { height: 0; opacity: 0.5; }
+            100% { height: 100%; opacity: 1; }
+        }
+        .animate-scan {
+            animation: scan-vertical 0.5s ease-out forwards;
+        }
+      `}</style>
+      
+      {/* Texture Overlay for Glacial */}
+      {isGlacial && <div className="absolute inset-0 frost-texture pointer-events-none fixed mix-blend-multiply"></div>}
+
+      <div className="container mx-auto px-4 max-w-full overflow-hidden relative z-10">
         
         {/* HEADER DO CARDÁPIO */}
         <div className="text-center mb-12 animate-fade-in px-2">
@@ -481,22 +538,33 @@ export const FullMenu: React.FC = () => {
                     <span>✦</span><span>❖</span><span>✦</span>
                 </div>
             </div>
+          ) : isGlacial ? (
+            <div className="relative inline-block py-6 px-10">
+                <Snowflake className="absolute -top-4 -left-4 text-cyan-400 w-12 h-12 animate-pulse" />
+                <Snowflake className="absolute -bottom-4 -right-4 text-cyan-400 w-10 h-10 animate-pulse delay-700" />
+                <h2 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-cyan-600 to-cyan-900 drop-shadow-sm">
+                  FESTIM GLACIAL
+                </h2>
+                <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-300 to-transparent my-4"></div>
+                <p className="text-cyan-800 font-medium tracking-wide uppercase">Sabores do Gelo Eterno</p>
+            </div>
           ) : (
             <>
                 <h2 className="text-4xl md:text-6xl font-black mb-4 font-display text-white">
-                   {isGlacial ? <span className="text-cyan-400">Sabores do Gelo</span> : 'Cardápio SetLand'}
+                   Cardápio SetLand
                 </h2>
-                <p className={`text-lg max-w-2xl mx-auto ${isGlacial ? 'text-cyan-100' : 'text-slate-400'}`}>
+                <p className="text-lg max-w-2xl mx-auto text-slate-400">
                    Recupere suas energias para a próxima aventura.
                 </p>
             </>
           )}
         </div>
 
-        {/* --- NAVEGAÇÃO DE CATEGORIAS --- */}
+        {/* --- NAVEGAÇÃO DE CATEGORIAS (Filtro normal) --- */}
         <div className={`sticky top-20 z-40 py-4 mb-16 transition-all backdrop-blur-md border-y w-screen -ml-4 px-4
             ${isFuture ? 'bg-black/90 border-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.2)]' : 
               isMedieval ? 'bg-[#eaddcf]/95 border-[#5c4033] shadow-md parchment-pattern' : 
+              isGlacial ? 'bg-white/70 border-cyan-200 shadow-lg' :
               'bg-slate-900/90 border-white/10'
             }
         `}>
@@ -504,6 +572,7 @@ export const FullMenu: React.FC = () => {
             <button onClick={() => scrollNav('left')} className={`hidden md:block p-2 rounded-full transition z-10 
                 ${isFuture ? 'text-[#00f3ff] hover:bg-[#00f3ff]/20' : 
                   isMedieval ? 'text-[#800000] hover:bg-[#800000]/10' : 
+                  isGlacial ? 'text-cyan-700 hover:bg-cyan-100' :
                   'text-white hover:bg-white/20'}`}>
                 <ChevronLeft size={32} />
             </button>
@@ -520,7 +589,7 @@ export const FullMenu: React.FC = () => {
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.id)}
-                  onMouseEnter={playHoverSound}
+                  onMouseEnter={() => playHoverSound('hover')}
                   className={`flex-shrink-0 flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 font-bold transition-all duration-300 text-sm md:text-base
                     ${isFuture 
                         ? `uppercase font-future tracking-widest border border-[#00f3ff] skew-x-[-10deg]
@@ -528,6 +597,11 @@ export const FullMenu: React.FC = () => {
                         : isMedieval
                         ? `rounded-sm medieval-font-title tracking-widest border-b-2
                            ${activeCategory === cat.id ? 'border-[#800000] text-[#800000] bg-[#5c4033]/10' : 'border-transparent text-[#5c4033] hover:text-[#800000]'}`
+                        : isGlacial
+                        ? `rounded-xl border
+                           ${activeCategory === cat.id 
+                             ? 'bg-cyan-100 border-cyan-400 text-cyan-900 shadow-md' 
+                             : 'bg-white/50 border-cyan-200 text-cyan-700 hover:bg-cyan-50'}`
                         : `rounded-full whitespace-nowrap 
                            ${activeCategory === cat.id ? 'bg-accent text-slate-900 scale-105 shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-accent hover:text-white'}`
                     }
@@ -546,40 +620,72 @@ export const FullMenu: React.FC = () => {
             <button onClick={() => scrollNav('right')} className={`hidden md:block p-2 rounded-full transition z-10 
                 ${isFuture ? 'text-[#00f3ff] hover:bg-[#00f3ff]/20' : 
                   isMedieval ? 'text-[#800000] hover:bg-[#800000]/10' : 
+                  isGlacial ? 'text-cyan-700 hover:bg-cyan-100' :
                   'text-white hover:bg-white/20'}`}>
                 <ChevronRight size={32} />
             </button>
           </div>
         </div>
 
-        {/* --- CONTEÚDO --- */}
+        {/* --- CONTEÚDO DO MENU --- */}
         <div className="space-y-32 max-w-6xl mx-auto pb-12">
-          {menuData.map((category) => (
+          {menuData.map((category) => {
+            // Lógica Futurista: Ativo se for a categoria do scroll/click
+            const isFutureActive = activeCategory === category.id;
+
+            return (
             <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-64">
               
-              {/* --- LAYOUT FUTURISTA --- */}
+              {/* --- LAYOUT FUTURISTA (Expandível no Card) --- */}
               {isFuture ? (
-                <div className="relative border-2 border-[#00f3ff] bg-black/90 p-1 mb-8 shadow-[0_0_20px_rgba(0,243,255,0.15)] mx-2 md:mx-0">
+                <div className={`relative border-2 transition-all duration-500 bg-black/90 p-1 mb-8 mx-2 md:mx-0
+                    ${isFutureActive ? 'border-[#00f3ff] shadow-[0_0_30px_rgba(0,243,255,0.3)]' : 'border-[#00f3ff]/30 opacity-70 hover:opacity-100'}
+                `}>
                     <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-[#ff00ff] z-10"></div>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-[#ff00ff] z-10"></div>
 
-                    <div className="bg-[#00f3ff]/10 p-4 md:p-6 border-b border-[#00f3ff] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    {/* Header do Card (Título + Ícone) */}
+                    <div 
+                        className="bg-[#00f3ff]/10 p-4 md:p-6 border-b border-[#00f3ff] flex items-center justify-between gap-4 cursor-pointer"
+                        onClick={() => handleCategoryClick(category.id)}
+                    >
                         <div className="flex items-center gap-4">
-                            <div className="p-2 border border-[#00f3ff] bg-black icon-neon">
+                            <div className={`p-2 border bg-black transition-colors ${isFutureActive ? 'border-[#00f3ff] icon-neon' : 'border-gray-700 text-gray-500'}`}>
                                 {category.icon}
                             </div>
-                            <h3 className="text-3xl md:text-5xl font-black font-future italic text-white striped-text tracking-widest break-all">
+                            <h3 className={`text-3xl md:text-5xl font-black font-future italic tracking-widest break-all transition-colors
+                                ${isFutureActive ? 'text-white striped-text' : 'text-gray-600'}
+                            `}>
                                 {category.title.toUpperCase()}
                             </h3>
                         </div>
-                        <div className="hidden md:flex gap-1">
-                            {[1,2,3].map(i => <div key={i} className={`w-8 h-2 bg-[#00f3ff] opacity-${i*30}`}></div>)}
+                        {isFutureActive && (
+                            <span className="text-[#ff00ff] font-mono text-xs animate-pulse">Scanning...</span>
+                        )}
+                    </div>
+
+                    {/* Banner Holográfico (Só aparece se ativo) */}
+                    <div className={`overflow-hidden transition-all duration-500 ease-in-out border-b border-[#00f3ff]/30
+                        ${isFutureActive ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}
+                    `}>
+                        <div className="relative h-48 w-full">
+                            {/* Scanline Overlay */}
+                            <div className="absolute inset-0 z-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none"></div>
+                            <img src={category.image} alt={category.title} className="w-full h-full object-cover filter contrast-125 grayscale sepia-[.5] hue-rotate-180" />
+                            <div className="absolute inset-0 bg-[#00f3ff]/20 mix-blend-overlay"></div>
+                            
+                            {/* Resumo / Info do Sistema */}
+                            <div className="absolute bottom-4 right-4 bg-black/80 border border-[#ff00ff] p-2 text-xs font-mono text-[#ff00ff]">
+                                <p>CAT_ID: {category.id.toUpperCase()}</p>
+                                <p>ITEMS: {category.items.length}</p>
+                            </div>
                         </div>
                     </div>
 
+                    {/* Lista de Itens */}
                     <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 bg-[linear-gradient(0deg,rgba(0,243,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]">
                         {category.items.map((item, idx) => (
-                            <div key={idx} className="group relative pl-4 hover:pl-6 transition-all duration-300 cursor-default" onMouseEnter={playHoverSound} onClick={playHoverSound}>
+                            <div key={idx} className="group relative pl-4 hover:pl-6 transition-all duration-300 cursor-default" onMouseEnter={() => playHoverSound('hover')}>
                                 <div className="absolute left-0 top-1 w-1 h-full bg-[#333] group-hover:bg-[#ff00ff] transition-colors"></div>
                                 <div className="flex justify-between items-baseline border-b border-dashed border-[#333] pb-2 group-hover:border-[#00f3ff]/50">
                                     <span className="text-[#00f3ff] font-future tracking-wider text-base md:text-lg group-hover:text-white transition-colors">{item.name}</span>
@@ -591,33 +697,29 @@ export const FullMenu: React.FC = () => {
                     </div>
                 </div>
               
-              /* --- LAYOUT MEDIEVAL (NOVO) --- */
+              /* --- LAYOUT MEDIEVAL (Original Perfeito) --- */
               ) : isMedieval ? (
                 <div className="relative mx-2 md:mx-0 parchment-pattern shadow-[0_0_30px_rgba(0,0,0,0.3)] medieval-border p-8 md:p-12 animate-slide-up">
-                    {/* Decorative Corner Ornaments (CSS pseudoish) */}
                     <div className="absolute top-2 left-2 text-[#800000] text-4xl leading-none">╔</div>
                     <div className="absolute top-2 right-2 text-[#800000] text-4xl leading-none">╗</div>
                     <div className="absolute bottom-2 left-2 text-[#800000] text-4xl leading-none">╚</div>
                     <div className="absolute bottom-2 right-2 text-[#800000] text-4xl leading-none">╝</div>
 
-                    {/* Section Header */}
-                    <div className="text-center mb-10">
-                         <div className="flex items-center justify-center gap-4 text-[#800000] opacity-80 mb-2">
-                             <span className="h-px w-12 bg-[#800000]"></span>
-                             <Crown size={24} />
-                             <span className="h-px w-12 bg-[#800000]"></span>
-                         </div>
-                         <h3 className="text-4xl font-bold medieval-font-title text-[#4a3728] uppercase tracking-wider drop-shadow-sm">
-                             {category.title}
-                         </h3>
+                    {/* Banner Medieval Estático */}
+                    <div className="mb-10 relative border-4 border-double border-[#5c4033] rounded-lg overflow-hidden h-40 group">
+                        <img src={category.image} alt={category.title} className="w-full h-full object-cover sepia opacity-80" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#4a3728]/60">
+                            <h3 className="text-4xl font-bold medieval-font-title text-[#f5e6d3] uppercase tracking-wider drop-shadow-md border-b-2 border-[#f5e6d3] pb-2">
+                                {category.title}
+                            </h3>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10 relative">
-                        {/* Vertical Divider for Desktop */}
                         <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-[#5c4033]/30"></div>
 
                         {category.items.map((item, idx) => (
-                            <div key={idx} className="group relative" onMouseEnter={playHoverSound} onClick={playHoverSound}>
+                            <div key={idx} className="group relative" onMouseEnter={() => playHoverSound('hover')}>
                                 <div className="text-center mb-1">
                                     <h4 className="font-bold text-xl medieval-font-title text-[#800000] tracking-wide mb-1 group-hover:scale-105 transition-transform duration-300">
                                         {item.name}
@@ -641,14 +743,59 @@ export const FullMenu: React.FC = () => {
                     </div>
                 </div>
 
-              /* --- LAYOUT PADRÃO / GLACIAL --- */
+              /* --- LAYOUT GLACIAL (Original Perfeito - Fundo Claro) --- */
+              ) : isGlacial ? (
+                <div className="relative mx-2 md:mx-0 ice-pattern rounded-3xl p-8 md:p-12 animate-slide-up overflow-hidden group-hover-container">
+                    <div className="absolute inset-0 animate-shimmer opacity-50"></div>
+                    
+                    <div className="absolute top-4 left-4 text-cyan-300 text-2xl rotate-45">◆</div>
+                    <div className="absolute top-4 right-4 text-cyan-300 text-2xl rotate-45">◆</div>
+                    <div className="absolute bottom-4 left-4 text-cyan-300 text-2xl rotate-45">◆</div>
+                    <div className="absolute bottom-4 right-4 text-cyan-300 text-2xl rotate-45">◆</div>
+
+                    {/* Banner Glacial Estático */}
+                    <div className="mb-10 relative rounded-2xl overflow-hidden h-40 border border-cyan-200/50 shadow-inner">
+                        <img src={category.image} alt={category.title} className="w-full h-full object-cover opacity-90" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-100/80 to-transparent flex items-center pl-10">
+                            <h3 className="text-4xl font-bold font-display text-cyan-900 uppercase tracking-widest drop-shadow-sm">
+                                {category.title}
+                            </h3>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10 relative z-10">
+                        <div className="hidden md:block absolute left-1/2 top-10 bottom-10 w-px bg-gradient-to-b from-transparent via-cyan-300 to-transparent"></div>
+
+                        {category.items.map((item, idx) => (
+                            <div key={idx} className="group relative text-center" onMouseEnter={() => playHoverSound('hover')}>
+                                <div className="mb-2 transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+                                    <h4 className="font-bold text-xl text-cyan-800 tracking-wide mb-1 drop-shadow-sm group-hover:text-cyan-600 transition-all">
+                                        {item.name}
+                                    </h4>
+                                    <div className="flex justify-center items-center gap-3">
+                                        <span className="w-1 h-1 rounded-full bg-cyan-300"></span>
+                                        <span className="text-cyan-600 font-mono text-lg font-bold">{item.price}</span>
+                                        <span className="w-1 h-1 rounded-full bg-cyan-300"></span>
+                                    </div>
+                                </div>
+                                {item.description && (
+                                    <p className="text-slate-600 text-sm font-medium leading-relaxed px-4 group-hover:text-cyan-700 transition-colors">
+                                        {item.description}
+                                    </p>
+                                )}
+                                <div className="w-12 h-px bg-cyan-200 mx-auto mt-4 group-hover:w-24 group-hover:bg-cyan-400 transition-all"></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+              /* --- LAYOUT PADRÃO (Dark) --- */
               ) : (
                 <div className="animate-slide-up">
                     <div className="flex flex-col md:flex-row gap-8 mb-10 items-end">
                         <div className="w-full md:w-1/3 px-4 md:px-0">
-                            <div className={`relative h-48 md:h-56 rounded-2xl overflow-hidden shadow-2xl group border-4
-                                ${isGlacial ? 'border-cyan-400/50 rounded-2xl' : 'border-slate-700 rounded-2xl'}`}>
-                                <img src={category.image} alt={category.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700`} />
+                            <div className="relative h-48 md:h-56 rounded-2xl overflow-hidden shadow-2xl group border-4 border-slate-700">
+                                <img src={category.image} alt={category.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                                 <div className="absolute bottom-0 left-0 w-full p-4 text-center">
                                     <h3 className="text-2xl md:text-3xl font-bold text-white font-display">
@@ -662,7 +809,7 @@ export const FullMenu: React.FC = () => {
                             <div className="h-1 w-full mb-8 rounded-full bg-slate-800"></div>
                             <div className="grid grid-cols-1 gap-y-6">
                                 {category.items.map((item, idx) => (
-                                <div key={idx} className="group flex flex-col" onMouseEnter={playHoverSound} onClick={playHoverSound}>
+                                <div key={idx} className="group flex flex-col" onMouseEnter={() => playHoverSound('hover')}>
                                     <div className="flex items-baseline justify-between">
                                         <span className="font-bold text-lg md:text-xl tracking-wide transition-colors text-slate-100 group-hover:text-accent">
                                             {item.name}
@@ -686,12 +833,15 @@ export const FullMenu: React.FC = () => {
               )}
 
             </div>
-          ))}
+          )})}
         </div>
 
         {/* Footer Note */}
         <div className={`mt-32 pt-12 border-t text-center text-sm opacity-60
-            ${isFuture ? 'border-[#00f3ff] text-[#00f3ff] font-mono' : isMedieval ? 'border-[#5c4033] text-[#5c4033] font-serif' : 'border-slate-800 text-slate-500'}`}>
+            ${isFuture ? 'border-[#00f3ff] text-[#00f3ff] font-mono' : 
+              isMedieval ? 'border-[#5c4033] text-[#5c4033] font-serif' : 
+              isGlacial ? 'border-cyan-300 text-cyan-800' :
+              'border-slate-800 text-slate-500'}`}>
             <p className="mb-2">* Imagens meramente ilustrativas.</p>
             <p>Se beber, não dirija. Venda proibida para menores de 18 anos.</p>
             <p className="mt-4 italic">Cobramos taxa de serviço de 10% (opcional).</p>
