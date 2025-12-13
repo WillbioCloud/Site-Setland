@@ -325,61 +325,86 @@ export const FullMenu: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('couvert');
   const { currentTheme } = useTheme();
   
-  // Refs para controle de scroll e drag
+  // Refs
   const navRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Estados de Drag
   const [isDown, setIsDown] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Rola para o topo ao carregar
   useEffect(() => {
     window.scrollTo(0, 0);
+    audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    return () => audioCtxRef.current?.close();
   }, []);
 
-  // --- Handlers de Drag (Mouse) ---
+  // --- Áudio ---
+  const playHoverSound = () => {
+    if (!audioCtxRef.current) return;
+    if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
+
+    const ctx = audioCtxRef.current;
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    const now = ctx.currentTime;
+    
+    if (currentTheme === 'futuristic') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+        gainNode.gain.setValueAtTime(0.05, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+    } else if (currentTheme === 'medieval') {
+        // Som de "papel" ou "madeira" leve
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(100, now);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.linearRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+    } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        gainNode.gain.setValueAtTime(0.02, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        osc.start(now);
+        osc.stop(now + 0.03);
+    }
+  };
+
+  // --- Handlers de Navegação ---
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!navRef.current) return;
     setIsDown(true);
     setStartX(e.pageX - navRef.current.offsetLeft);
     setScrollLeft(navRef.current.scrollLeft);
-    // Não seta isDragging true imediatamente para permitir clique
   };
-
-  const handleMouseLeave = () => {
-    setIsDown(false);
-    setIsDragging(false);
-  };
-
-  const handleMouseUp = () => {
-    setIsDown(false);
-    // Pequeno delay para garantir que o clique funcione se foi rápido
-    setTimeout(() => setIsDragging(false), 50);
-  };
-
+  const handleMouseLeave = () => { setIsDown(false); setIsDragging(false); };
+  const handleMouseUp = () => { setIsDown(false); setTimeout(() => setIsDragging(false), 50); };
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDown || !navRef.current) return;
     e.preventDefault();
     const x = e.pageX - navRef.current.offsetLeft;
-    const walk = (x - startX) * 2; // Velocidade do scroll
-    
-    // Só considera "arrastar" se moveu mais de 5 pixels
-    if (Math.abs(walk) > 5) {
-        setIsDragging(true);
-        navRef.current.scrollLeft = scrollLeft - walk;
-    }
+    const walk = (x - startX) * 2;
+    if (Math.abs(walk) > 5) { setIsDragging(true); navRef.current.scrollLeft = scrollLeft - walk; }
   };
-
-  // --- Navegação por Setas ---
   const scrollNav = (direction: 'left' | 'right') => {
     if (navRef.current) {
         const amount = 300;
         navRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
     }
   };
-
   const handleCategoryClick = (catId: string) => {
-    if (isDragging) return; // Se estiver arrastando, ignora o clique
+    if (isDragging) return; 
+    playHoverSound();
     setActiveCategory(catId);
     const element = document.getElementById(`cat-${catId}`);
     if (element) {
@@ -388,16 +413,15 @@ export const FullMenu: React.FC = () => {
     }
   };
 
-  // --- LÓGICA DE TEMAS ---
+  // --- Vars de Tema ---
   const isFuture = currentTheme === 'futuristic';
   const isMedieval = currentTheme === 'medieval';
   const isGlacial = currentTheme === 'glacial';
 
   return (
     <section className={`pt-32 pb-20 min-h-screen w-full overflow-x-hidden transition-colors duration-700 
-      ${isFuture ? 'bg-black' : isMedieval ? 'bg-[#1a110d] parchment-texture' : isGlacial ? 'bg-slate-900' : 'bg-slate-950'}`}>
+      ${isFuture ? 'bg-black' : isMedieval ? 'bg-[#eaddcf]' : isGlacial ? 'bg-slate-900' : 'bg-slate-950'}`}>
       
-      {/* CSS Injetado */}
       <style>{`
         .striped-text {
           background-image: repeating-linear-gradient(180deg, #fff 0, #fff 1px, transparent 2px, transparent 4px);
@@ -405,19 +429,29 @@ export const FullMenu: React.FC = () => {
           -webkit-text-fill-color: transparent;
           text-shadow: 0 0 8px rgba(0, 243, 255, 0.7);
         }
-        .neon-box {
-          box-shadow: 0 0 5px #00f3ff, inset 0 0 10px rgba(0, 243, 255, 0.2);
+        .neon-box { box-shadow: 0 0 5px #00f3ff, inset 0 0 10px rgba(0, 243, 255, 0.2); }
+        .icon-neon { filter: drop-shadow(0 0 3px #00f3ff); color: #00f3ff; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Medieval Specific */
+        .medieval-font-title { font-family: 'Cinzel', serif; }
+        .medieval-drop-cap::first-letter {
+            font-size: 2.5rem;
+            float: left;
+            margin-right: 0.5rem;
+            line-height: 0.8;
+            color: #800000;
+            font-family: 'Cinzel', serif;
         }
-        .icon-neon {
-            filter: drop-shadow(0 0 3px #00f3ff);
-            color: #00f3ff;
+        .parchment-pattern {
+            background-color: #eaddcf;
+            background-image: url("https://www.transparenttextures.com/patterns/aged-paper.png");
         }
-        .hide-scroll::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scroll {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .medieval-border {
+            border: 4px double #5c4033;
+            outline: 2px solid #800000;
+            outline-offset: 4px;
         }
       `}</style>
 
@@ -435,38 +469,45 @@ export const FullMenu: React.FC = () => {
                     <span className="text-[#ff00ff] font-bold text-xs md:text-sm transform skew-x-6 md:skew-x-12">V.3.0</span>
                 </div>
             </div>
+          ) : isMedieval ? (
+            <div className="relative inline-block py-8 px-12">
+                <div className="absolute inset-0 border-t-4 border-b-4 border-[#800000] opacity-80"></div>
+                <div className="absolute inset-x-0 top-2 bottom-2 border-t border-b border-[#5c4033] opacity-60"></div>
+                <h2 className="text-5xl md:text-7xl font-bold medieval-font-title text-[#800000] mb-2 drop-shadow-sm">
+                  O Banquete Real
+                </h2>
+                <p className="text-[#5c4033] font-serif italic text-lg">Iguarias dignas da realeza de SetLand</p>
+                <div className="flex justify-center gap-2 mt-4 text-[#800000]">
+                    <span>✦</span><span>❖</span><span>✦</span>
+                </div>
+            </div>
           ) : (
             <>
-                <h2 className={`text-4xl md:text-6xl font-black mb-4 
-                  ${isMedieval ? 'font-medieval text-[#5c4033] drop-shadow-sm' : 'font-display text-white'}`}>
-                  {isMedieval ? 'O Banquete Real' : isGlacial ? 'Sabores do Gelo' : 'Cardápio SetLand'}
+                <h2 className="text-4xl md:text-6xl font-black mb-4 font-display text-white">
+                   {isGlacial ? <span className="text-cyan-400">Sabores do Gelo</span> : 'Cardápio SetLand'}
                 </h2>
-                <p className={`text-lg max-w-2xl mx-auto 
-                   ${isMedieval ? 'text-[#8b5e3c] font-serif italic' : isGlacial ? 'text-cyan-100' : 'text-slate-400'}`}>
-                   {isMedieval ? 'Iguarias preparadas pelos melhores cozinheiros do reino.' : 'Recupere suas energias para a próxima aventura.'}
+                <p className={`text-lg max-w-2xl mx-auto ${isGlacial ? 'text-cyan-100' : 'text-slate-400'}`}>
+                   Recupere suas energias para a próxima aventura.
                 </p>
             </>
           )}
         </div>
 
-        {/* --- NAVEGAÇÃO DE CATEGORIAS (STICKY & DRAGGABLE) --- */}
+        {/* --- NAVEGAÇÃO DE CATEGORIAS --- */}
         <div className={`sticky top-20 z-40 py-4 mb-16 transition-all backdrop-blur-md border-y w-screen -ml-4 px-4
             ${isFuture ? 'bg-black/90 border-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.2)]' : 
-              isMedieval ? 'bg-[#f5e6d3]/95 border-[#5c4033] shadow-md' : 
+              isMedieval ? 'bg-[#eaddcf]/95 border-[#5c4033] shadow-md parchment-pattern' : 
               'bg-slate-900/90 border-white/10'
             }
         `}>
           <div className="relative max-w-7xl mx-auto flex items-center">
-            
-            {/* Seta Esquerda (Apenas Desktop) */}
             <button onClick={() => scrollNav('left')} className={`hidden md:block p-2 rounded-full transition z-10 
                 ${isFuture ? 'text-[#00f3ff] hover:bg-[#00f3ff]/20' : 
-                  isMedieval ? 'text-[#5c4033] hover:bg-[#5c4033]/10' : 
+                  isMedieval ? 'text-[#800000] hover:bg-[#800000]/10' : 
                   'text-white hover:bg-white/20'}`}>
                 <ChevronLeft size={32} />
             </button>
 
-            {/* Lista Scrollável */}
             <div 
                 ref={navRef}
                 className="flex gap-4 overflow-x-auto hide-scroll scroll-smooth px-4 w-full cursor-grab active:cursor-grabbing select-none py-2"
@@ -479,20 +520,20 @@ export const FullMenu: React.FC = () => {
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.id)}
+                  onMouseEnter={playHoverSound}
                   className={`flex-shrink-0 flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 font-bold transition-all duration-300 text-sm md:text-base
                     ${isFuture 
                         ? `uppercase font-future tracking-widest border border-[#00f3ff] skew-x-[-10deg]
                            ${activeCategory === cat.id ? 'bg-[#00f3ff] text-black shadow-[0_0_15px_#00f3ff]' : 'text-[#00f3ff] bg-transparent hover:bg-[#00f3ff]/10'}`
                         : isMedieval
-                        ? `rounded-lg font-medieval tracking-wider border-2
-                           ${activeCategory === cat.id ? 'bg-[#5c4033] text-[#f5e6d3] border-[#5c4033]' : 'bg-transparent text-[#5c4033] border-[#5c4033]/50 hover:border-[#5c4033]'}`
+                        ? `rounded-sm medieval-font-title tracking-widest border-b-2
+                           ${activeCategory === cat.id ? 'border-[#800000] text-[#800000] bg-[#5c4033]/10' : 'border-transparent text-[#5c4033] hover:text-[#800000]'}`
                         : `rounded-full whitespace-nowrap 
                            ${activeCategory === cat.id ? 'bg-accent text-slate-900 scale-105 shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-accent hover:text-white'}`
                     }
                   `}
                 >
                   <span className={`${isFuture ? "transform skew-x-[10deg] flex items-center" : "flex items-center"}`}>
-                    {/* Renderiza o ícone com classe neon se for futurista, senão ícone normal */}
                     <span className={`${isFuture ? 'icon-neon mr-2' : 'mr-2'}`}>
                         {cat.icon}
                     </span>
@@ -502,10 +543,9 @@ export const FullMenu: React.FC = () => {
               ))}
             </div>
 
-            {/* Seta Direita (Apenas Desktop) */}
             <button onClick={() => scrollNav('right')} className={`hidden md:block p-2 rounded-full transition z-10 
                 ${isFuture ? 'text-[#00f3ff] hover:bg-[#00f3ff]/20' : 
-                  isMedieval ? 'text-[#5c4033] hover:bg-[#5c4033]/10' : 
+                  isMedieval ? 'text-[#800000] hover:bg-[#800000]/10' : 
                   'text-white hover:bg-white/20'}`}>
                 <ChevronRight size={32} />
             </button>
@@ -517,14 +557,12 @@ export const FullMenu: React.FC = () => {
           {menuData.map((category) => (
             <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-64">
               
-              {/* --- LAYOUT FUTURISTA (CYBERPUNK) --- */}
+              {/* --- LAYOUT FUTURISTA --- */}
               {isFuture ? (
                 <div className="relative border-2 border-[#00f3ff] bg-black/90 p-1 mb-8 shadow-[0_0_20px_rgba(0,243,255,0.15)] mx-2 md:mx-0">
-                    {/* Cantoneiras */}
                     <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-[#ff00ff] z-10"></div>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-[#ff00ff] z-10"></div>
 
-                    {/* Cabeçalho */}
                     <div className="bg-[#00f3ff]/10 p-4 md:p-6 border-b border-[#00f3ff] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <div className="p-2 border border-[#00f3ff] bg-black icon-neon">
@@ -539,41 +577,81 @@ export const FullMenu: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Itens Grid */}
                     <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 bg-[linear-gradient(0deg,rgba(0,243,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]">
                         {category.items.map((item, idx) => (
-                            <div key={idx} className="group relative pl-4 hover:pl-6 transition-all duration-300">
-                                {/* Marcador lateral */}
+                            <div key={idx} className="group relative pl-4 hover:pl-6 transition-all duration-300 cursor-default" onMouseEnter={playHoverSound} onClick={playHoverSound}>
                                 <div className="absolute left-0 top-1 w-1 h-full bg-[#333] group-hover:bg-[#ff00ff] transition-colors"></div>
-                                
                                 <div className="flex justify-between items-baseline border-b border-dashed border-[#333] pb-2 group-hover:border-[#00f3ff]/50">
-                                    <span className="text-[#00f3ff] font-future tracking-wider text-base md:text-lg group-hover:text-white transition-colors">
-                                        {item.name}
-                                    </span>
-                                    <span className="text-white font-mono text-lg md:text-xl drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] whitespace-nowrap ml-2">
-                                        {item.price}
-                                    </span>
+                                    <span className="text-[#00f3ff] font-future tracking-wider text-base md:text-lg group-hover:text-white transition-colors">{item.name}</span>
+                                    <span className="text-white font-mono text-lg md:text-xl drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] whitespace-nowrap ml-2">{item.price}</span>
                                 </div>
-                                {item.description && (
-                                    <p className="text-gray-500 text-[10px] md:text-xs font-mono mt-1 uppercase tracking-tight">{item.description}</p>
-                                )}
+                                {item.description && <p className="text-gray-500 text-[10px] md:text-xs font-mono mt-1 uppercase tracking-tight">{item.description}</p>}
                             </div>
                         ))}
                     </div>
                 </div>
+              
+              /* --- LAYOUT MEDIEVAL (NOVO) --- */
+              ) : isMedieval ? (
+                <div className="relative mx-2 md:mx-0 parchment-pattern shadow-[0_0_30px_rgba(0,0,0,0.3)] medieval-border p-8 md:p-12 animate-slide-up">
+                    {/* Decorative Corner Ornaments (CSS pseudoish) */}
+                    <div className="absolute top-2 left-2 text-[#800000] text-4xl leading-none">╔</div>
+                    <div className="absolute top-2 right-2 text-[#800000] text-4xl leading-none">╗</div>
+                    <div className="absolute bottom-2 left-2 text-[#800000] text-4xl leading-none">╚</div>
+                    <div className="absolute bottom-2 right-2 text-[#800000] text-4xl leading-none">╝</div>
+
+                    {/* Section Header */}
+                    <div className="text-center mb-10">
+                         <div className="flex items-center justify-center gap-4 text-[#800000] opacity-80 mb-2">
+                             <span className="h-px w-12 bg-[#800000]"></span>
+                             <Crown size={24} />
+                             <span className="h-px w-12 bg-[#800000]"></span>
+                         </div>
+                         <h3 className="text-4xl font-bold medieval-font-title text-[#4a3728] uppercase tracking-wider drop-shadow-sm">
+                             {category.title}
+                         </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10 relative">
+                        {/* Vertical Divider for Desktop */}
+                        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-[#5c4033]/30"></div>
+
+                        {category.items.map((item, idx) => (
+                            <div key={idx} className="group relative" onMouseEnter={playHoverSound} onClick={playHoverSound}>
+                                <div className="text-center mb-1">
+                                    <h4 className="font-bold text-xl medieval-font-title text-[#800000] tracking-wide mb-1 group-hover:scale-105 transition-transform duration-300">
+                                        {item.name}
+                                    </h4>
+                                    <div className="flex justify-center items-center gap-2 mb-2">
+                                        <span className="h-px w-4 bg-[#5c4033]/50"></span>
+                                        <span className="text-[#5c4033] font-bold font-serif">{item.price}</span>
+                                        <span className="h-px w-4 bg-[#5c4033]/50"></span>
+                                    </div>
+                                </div>
+                                {item.description && (
+                                    <p className="text-[#4a3728] text-sm text-center font-serif leading-relaxed italic opacity-90 px-4">
+                                        {item.description}
+                                    </p>
+                                )}
+                                <div className="flex justify-center mt-3 text-[#800000]/40 text-xs">
+                                    ❦
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+              /* --- LAYOUT PADRÃO / GLACIAL --- */
               ) : (
-                
-              /* --- LAYOUT PADRÃO / MEDIEVAL / GLACIAL --- */
                 <div className="animate-slide-up">
                     <div className="flex flex-col md:flex-row gap-8 mb-10 items-end">
                         <div className="w-full md:w-1/3 px-4 md:px-0">
                             <div className={`relative h-48 md:h-56 rounded-2xl overflow-hidden shadow-2xl group border-4
-                                ${isMedieval ? 'border-[#5c4033] rounded-b-lg' : isGlacial ? 'border-cyan-400/50 rounded-2xl' : 'border-slate-700 rounded-2xl'}`}>
-                                <img src={category.image} alt={category.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${isMedieval ? 'sepia-[.4]' : ''}`} />
+                                ${isGlacial ? 'border-cyan-400/50 rounded-2xl' : 'border-slate-700 rounded-2xl'}`}>
+                                <img src={category.image} alt={category.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700`} />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                                 <div className="absolute bottom-0 left-0 w-full p-4 text-center">
-                                    <h3 className={`text-2xl md:text-3xl font-bold text-white 
-                                        ${isMedieval ? 'font-medieval tracking-[0.2em] text-[#fbbf24] drop-shadow-md' : 'font-display'}`}>
+                                    <h3 className="text-2xl md:text-3xl font-bold text-white font-display">
                                         {category.title}
                                     </h3>
                                 </div>
@@ -581,30 +659,21 @@ export const FullMenu: React.FC = () => {
                         </div>
                         
                         <div className="w-full md:w-2/3 px-2">
-                            {/* Decorator Line */}
-                            <div className={`h-1 w-full mb-8 rounded-full ${isMedieval ? 'bg-[#5c4033]' : 'bg-slate-800'}`}></div>
-                            
+                            <div className="h-1 w-full mb-8 rounded-full bg-slate-800"></div>
                             <div className="grid grid-cols-1 gap-y-6">
                                 {category.items.map((item, idx) => (
-                                <div key={idx} className="group flex flex-col">
+                                <div key={idx} className="group flex flex-col" onMouseEnter={playHoverSound} onClick={playHoverSound}>
                                     <div className="flex items-baseline justify-between">
-                                        <span className={`font-bold text-lg md:text-xl tracking-wide transition-colors
-                                            ${isMedieval ? 'text-[#451a03] font-medieval' : 'text-slate-100'}`}>
+                                        <span className="font-bold text-lg md:text-xl tracking-wide transition-colors text-slate-100 group-hover:text-accent">
                                             {item.name}
                                         </span>
-                                        
-                                        {/* Linha pontilhada conectora */}
-                                        <div className={`flex-1 mx-2 md:mx-4 border-b-2 border-dotted mb-1 opacity-40
-                                            ${isMedieval ? 'border-[#5c4033]' : 'border-white'}`}></div>
-                                        
-                                        <span className={`font-bold text-lg md:text-xl whitespace-nowrap
-                                            ${isMedieval ? 'text-[#854d0e] font-serif' : 'text-accent'}`}>
+                                        <div className="flex-1 mx-2 md:mx-4 border-b-2 border-dotted mb-1 opacity-40 border-white"></div>
+                                        <span className="font-bold text-lg md:text-xl whitespace-nowrap text-accent">
                                             {item.price}
                                         </span>
                                     </div>
                                     {item.description && (
-                                        <p className={`text-xs md:text-sm mt-1
-                                            ${isMedieval ? 'text-[#5c4033]/80 italic font-serif' : 'text-slate-400'}`}>
+                                        <p className="text-xs md:text-sm mt-1 text-slate-400">
                                             {item.description}
                                         </p>
                                     )}
@@ -622,7 +691,7 @@ export const FullMenu: React.FC = () => {
 
         {/* Footer Note */}
         <div className={`mt-32 pt-12 border-t text-center text-sm opacity-60
-            ${isFuture ? 'border-[#00f3ff] text-[#00f3ff] font-mono' : isMedieval ? 'border-[#5c4033] text-[#5c4033]' : 'border-slate-800 text-slate-500'}`}>
+            ${isFuture ? 'border-[#00f3ff] text-[#00f3ff] font-mono' : isMedieval ? 'border-[#5c4033] text-[#5c4033] font-serif' : 'border-slate-800 text-slate-500'}`}>
             <p className="mb-2">* Imagens meramente ilustrativas.</p>
             <p>Se beber, não dirija. Venda proibida para menores de 18 anos.</p>
             <p className="mt-4 italic">Cobramos taxa de serviço de 10% (opcional).</p>
