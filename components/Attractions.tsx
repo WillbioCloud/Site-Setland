@@ -3,9 +3,9 @@ import { Attraction } from '../types';
 import { useTheme } from '../context/ThemeContext';
 
 const attractionsData: Attraction[] = [
-  { id: '1', name: 'Montanha de Gelo', category: 'radical', era: 'glacial', imageUrl: 'https://picsum.photos/seed/ice1/400/300', description: 'Queda livre congelante de 40 metros.' },
-  { id: '2', name: 'Vila dos Pinguins', category: 'kids', era: 'glacial', imageUrl: 'https://picsum.photos/seed/ice2/400/300', description: 'Playground interativo com animatrônicos.' },
-  { id: '3', name: 'Duelo de Cavaleiros', category: 'scenery', era: 'medieval', imageUrl: 'https://picsum.photos/seed/med1/400/300', description: 'Show ao vivo com dublês profissionais.' },
+  { id: '1', name: 'Parque de gelo', category: 'scenery', era: 'glacial', imageUrl: '../assets/Parque-de-Gelo.gif', description: 'Temperatura abaixo de -17°C.' },
+  { id: '2', name: 'Playground', category: 'kids', era: 'glacial', imageUrl: '../assets/Playground.jpg', description: 'Uma miniatura do castelo de gelo.' },
+  { id: '3', name: 'Vila medieval', category: 'scenery', era: 'medieval', imageUrl: '../assets/Vila-medieval.png', description: 'Cenário medieval com casa e artigos medieval.' },
   { id: '4', name: 'Catapulta Humana', category: 'radical', era: 'medieval', imageUrl: 'https://picsum.photos/seed/med2/400/300', description: 'Bungee jump reverso na torre do castelo.' },
   { id: '5', name: 'Cyber Race VR', category: 'radical', era: 'futuristic', imageUrl: 'https://picsum.photos/seed/fut1/400/300', description: 'Corrida de karts com realidade aumentada.' },
   { id: '6', name: 'Laboratório Neon', category: 'kids', era: 'futuristic', imageUrl: 'https://picsum.photos/seed/fut2/400/300', description: 'Experiências científicas divertidas para crianças.' },
