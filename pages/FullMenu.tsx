@@ -450,7 +450,7 @@ export const FullMenu: React.FC = () => {
   const isGlacial = currentTheme === 'glacial';
 
   return (
-    <section className={`pt-32 pb-20 min-h-screen w-full overflow-x-hidden transition-colors duration-700 
+    <section className={`pt-32 pb-20 min-h-screen w-full transition-colors duration-700 
       ${isFuture ? 'bg-black' : isMedieval ? 'bg-[#eaddcf]' : isGlacial ? 'bg-gradient-to-b from-[#e0f2fe] to-[#f0f9ff]' : 'bg-slate-950'}`}>
       
       <style>{`
@@ -512,7 +512,7 @@ export const FullMenu: React.FC = () => {
       {/* Texture Overlay for Glacial */}
       {isGlacial && <div className="absolute inset-0 frost-texture pointer-events-none fixed mix-blend-multiply"></div>}
 
-      <div className="container mx-auto px-4 max-w-full overflow-hidden relative z-10">
+      <div className="container mx-auto px-4 max-w-full relative z-10">
         
         {/* HEADER DO CARDÁPIO */}
         <div className="text-center mb-12 animate-fade-in px-2">
