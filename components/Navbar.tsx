@@ -4,6 +4,12 @@ import { Button } from './Button';
 import { useTheme } from '../context/ThemeContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+// Importação das Logos
+import logoDefault from '../assets/logo-setland.png';
+import logoMedieval from '../assets/logo-medieval.png';
+import logoGlacial from '../assets/logo-glacial.png';
+import logoFuturistic from '../assets/logo-futuristica.png';
+
 interface NavbarProps {
   onOpenTickets: () => void;
 }
@@ -28,29 +34,35 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
     setMobileMenuOpen(false);
 
     if (target.startsWith('#')) {
-      // Se estamos na Home, rola até a seção
       if (location.pathname === '/') {
-        if (target === '#hero') setTheme('default'); // Reseta tema se for para o topo
+        if (target === '#hero') setTheme('default');
         const element = document.querySelector(target);
         element?.scrollIntoView({ behavior: 'smooth' });
       } else {
-        // Se estamos em outra página (ex: /cardapio), vai para a home e depois rola
         setTheme('default');
         navigate('/');
-        // Pequeno delay para a página carregar antes de rolar
         setTimeout(() => {
           const element = document.querySelector(target);
           element?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
       }
     } else {
-      // Navegação para outra página (ex: /cardapio)
       navigate(target);
       window.scrollTo(0, 0);
     }
   };
 
-  // Dynamic Styles
+  // Define qual logo usar baseada no tema
+  const getLogo = () => {
+    switch (currentTheme) {
+      case 'medieval': return logoMedieval;
+      case 'glacial': return logoGlacial;
+      case 'futuristic': return logoFuturistic;
+      default: return logoDefault;
+    }
+  };
+
+  // Dynamic Styles Background
   const bgClass = isScrolled 
     ? (currentTheme === 'glacial' ? 'bg-glacial-base/90 border-b border-glacial-accent/20' : 
        currentTheme === 'medieval' ? 'bg-medieval-base/95 border-b border-medieval-accent/20' : 
@@ -58,22 +70,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
        'bg-slate-900/95') 
     : 'bg-transparent';
 
-  const logoColor = 
-    currentTheme === 'glacial' ? 'text-glacial-accent' : 
-    currentTheme === 'medieval' ? 'text-medieval-accent' : 
-    currentTheme === 'futuristic' ? 'text-future-neon' : 
-    'text-accent';
-
   return (
     <header 
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 backdrop-blur-sm ${bgClass} ${isScrolled ? 'py-3 shadow-lg' : 'py-6'}`}
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 backdrop-blur-sm ${bgClass} ${isScrolled ? 'py-2 shadow-lg' : 'py-4'}`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
-        {/* Logo */}
+        
+        {/* LOGO DINÂMICA (IMAGEM) */}
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleNavigation('#hero')}>
-          <div className={`text-2xl font-black tracking-tighter text-white drop-shadow-md ${currentTheme === 'medieval' ? 'font-medieval' : currentTheme === 'futuristic' ? 'font-future italic' : 'font-display'}`}>
-            SET<span className={logoColor}>LAND</span>
-          </div>
+          <img 
+            src={getLogo()} 
+            alt="SetLand Logo" 
+            className={`transition-all duration-500 object-contain
+              ${isScrolled ? 'h-10 md:h-12' : 'h-12 md:h-16'}
+              ${currentTheme === 'glacial' ? 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : ''}
+              ${currentTheme === 'futuristic' ? 'drop-shadow-[0_0_8px_rgba(217,70,239,0.8)]' : ''}
+            `}
+          />
         </div>
 
         {/* Desktop Nav */}
