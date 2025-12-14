@@ -3,14 +3,23 @@ import { Attraction } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { Hand } from 'lucide-react';
 
+// 1. IMPORTE AS IMAGENS AQUI
+import imgGelo from '../assets/Parque-de-Gelo.gif';
+import imgPlayground from '../assets/Playground.jpg';
+import imgMedieval from '../assets/Vila-medieval.png';
+import imgGuilhotina from '../assets/Guilhotina.jpg';
+import imgTeatral from '../assets/Combate-sabre.png';
+import imgFuturistic from '../assets/Robo.jpg';
+
+
 // --- DADOS ORIGINAIS ---
 const attractionsData: Attraction[] = [
-  { id: '1', name: 'Parque de gelo', category: 'scenery', era: 'glacial', imageUrl: '../assets/Parque-de-Gelo.gif', description: 'Temperatura abaixo de -17°C.' },
-  { id: '2', name: 'Playground', category: 'kids', era: 'glacial', imageUrl: '../assets/Playground.jpg', description: 'Uma miniatura do castelo de gelo.' },
-  { id: '3', name: 'Vila medieval', category: 'scenery', era: 'medieval', imageUrl: '../assets/Vila-medieval.png', description: 'Cenário medieval com casa e artigos medievais.' },
-  { id: '4', name: 'Guilhotina', category: 'radical', era: 'medieval', imageUrl: '../assets/Guilhotina.jpg', description: 'Teste sua coragem na guilhotina.' },
-  { id: '5', name: 'Peça teatral', category: 'radical', era: 'medieval', imageUrl: '../assets/Combate-sabre.png', description: 'Peças teatrais com combates reais.' },
-  { id: '6', name: 'Laboratório Neon', category: 'scenery', era: 'futuristic', imageUrl: '../assets/Robo.jpg', description: 'Sala futurista com trajes de proteção ao frio congelante.' },
+  { id: '1', name: 'Parque de gelo', category: 'scenery', era: 'glacial', imageUrl: imgGelo, description: 'Temperatura abaixo de -17°C.' },
+  { id: '2', name: 'Playground', category: 'kids', era: 'glacial', imageUrl: imgPlayground, description: 'Uma miniatura do castelo de gelo.' },
+  { id: '3', name: 'Vila medieval', category: 'scenery', era: 'medieval', imageUrl: imgMedieval, description: 'Cenário medieval com casa e artigos medievais.' },
+  { id: '4', name: 'Guilhotina', category: 'radical', era: 'medieval', imageUrl: imgGuilhotina, description: 'Teste sua coragem na guilhotina.' },
+  { id: '5', name: 'Peça teatral', category: 'radical', era: 'medieval', imageUrl: imgTeatral, description: 'Peças teatrais com combates reais.' },
+  { id: '6', name: 'Laboratório Neon', category: 'scenery', era: 'futuristic', imageUrl: imgFuturistic, description: 'Sala futurista com trajes de proteção ao frio congelante.' },
 ];
 
 // --- COMPONENTE DE RASPADINHA (GELO) ---
