@@ -64,7 +64,7 @@ export const Footer: React.FC = () => {
           {/* Map */}
           <div className="h-64 md:h-auto rounded-xl overflow-hidden bg-slate-800 relative">
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3820.7065961314756!2d-48.62933758467475!3d-17.74239857946927!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94a6f7b3b3b3b3b3%3A0x3b3b3b3b3b3b3b3b!2sCaldas%20Novas%2C%20GO!5e0!3m2!1spt-BR!2sbr!4v1620000000000!5m2!1spt-BR!2sbr" 
+              src="https://maps.google.com/maps?q=Rua%20Presidente%20Get%C3%BAlio%20Vargas%20Quadra%2063%20Lagoa%20Quente%2C%20Caldas%20Novas&t=&z=15&ie=UTF8&iwloc=&output=embed" 
               width="100%" 
               height="100%" 
               style={{border:0}} 

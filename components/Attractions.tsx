@@ -1,15 +1,107 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Attraction } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { Hand } from 'lucide-react';
 
+// --- DADOS ORIGINAIS ---
 const attractionsData: Attraction[] = [
   { id: '1', name: 'Parque de gelo', category: 'scenery', era: 'glacial', imageUrl: '../assets/Parque-de-Gelo.gif', description: 'Temperatura abaixo de -17°C.' },
   { id: '2', name: 'Playground', category: 'kids', era: 'glacial', imageUrl: '../assets/Playground.jpg', description: 'Uma miniatura do castelo de gelo.' },
-  { id: '3', name: 'Vila medieval', category: 'scenery', era: 'medieval', imageUrl: '../assets/Vila-medieval.png', description: 'Cenário medieval com casa e artigos medieval.' },
-  { id: '4', name: 'Catapulta Humana', category: 'radical', era: 'medieval', imageUrl: 'https://picsum.photos/seed/med2/400/300', description: 'Bungee jump reverso na torre do castelo.' },
-  { id: '5', name: 'Cyber Race VR', category: 'radical', era: 'futuristic', imageUrl: 'https://picsum.photos/seed/fut1/400/300', description: 'Corrida de karts com realidade aumentada.' },
-  { id: '6', name: 'Laboratório Neon', category: 'kids', era: 'futuristic', imageUrl: 'https://picsum.photos/seed/fut2/400/300', description: 'Experiências científicas divertidas para crianças.' },
+  { id: '3', name: 'Vila medieval', category: 'scenery', era: 'medieval', imageUrl: '../assets/Vila-medieval.png', description: 'Cenário medieval com casa e artigos medievais.' },
+  { id: '4', name: 'Guilhotina', category: 'radical', era: 'medieval', imageUrl: '../assets/Guilhotina.jpg', description: 'Teste sua coragem na guilhotina.' },
+  { id: '5', name: 'Peça teatral', category: 'radical', era: 'medieval', imageUrl: '../assets/Combate-sabre.png', description: 'Peças teatrais com combates reais.' },
+  { id: '6', name: 'Laboratório Neon', category: 'scenery', era: 'futuristic', imageUrl: '../assets/Robo.jpg', description: 'Sala futurista com trajes de proteção ao frio congelante.' },
 ];
+
+// --- COMPONENTE DE RASPADINHA (GELO) ---
+const FrostScratchLayer: React.FC = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [interacted, setInteracted] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Função para inicializar o gelo
+    const initIce = () => {
+      const { width, height } = container.getBoundingClientRect();
+      
+      canvas.width = width;
+      canvas.height = height;
+
+      // Desenha o fundo de gelo (branco azulado opaco)
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = 'rgba(200, 235, 250, 0.95)'; 
+      ctx.fillRect(0, 0, width, height);
+
+      // Textura de geada
+      for (let i = 0; i < width * height * 0.002; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const r = Math.random() * 2;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Configura pincel para apagar
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = 'rgba(0,0,0,1)';
+      ctx.lineWidth = 50;
+    };
+
+    initIce();
+
+    const resizeObserver = new ResizeObserver(() => initIce());
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const handleScratch = (clientX: number, clientY: number) => {
+    if (!interacted) setInteracted(true);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 25, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  return (
+    <div ref={containerRef} className="absolute inset-0 z-20 w-full h-full cursor-crosshair">
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full touch-none"
+        onMouseMove={(e) => handleScratch(e.clientX, e.clientY)}
+        onTouchMove={(e) => handleScratch(e.touches[0].clientX, e.touches[0].clientY)}
+      />
+      {/* Dica visual */}
+      <div className={`absolute bottom-4 right-4 pointer-events-none transition-opacity duration-700 flex items-center gap-2 text-cyan-900 bg-white/80 px-3 py-1 rounded-full text-xs font-bold shadow-lg
+        ${interacted ? 'opacity-0' : 'opacity-100 animate-pulse'}`}
+      >
+        <Hand size={14} />
+        Limpe o vidro
+      </div>
+    </div>
+  );
+};
 
 export const Attractions: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'kids' | 'radical' | 'scenery'>('all');
@@ -89,15 +181,20 @@ export const Attractions: React.FC = () => {
                   src={attraction.imageUrl} 
                   alt={attraction.name}
                   className={`w-full h-full object-cover transition-all duration-700
-                    ${currentTheme === 'glacial' && hoveredId === attraction.id ? 'animate-frost-reveal blur-0 scale-100' : currentTheme === 'glacial' ? 'blur-[2px] scale-105' : ''}
+                    ${currentTheme === 'glacial' ? '' : ''} 
                     ${currentTheme === 'medieval' ? 'grayscale-[0.3] group-hover:grayscale-0 sepia-[0.2]' : ''}
                     ${currentTheme === 'futuristic' ? 'opacity-80 group-hover:opacity-100 group-hover:scale-110' : 'group-hover:scale-110'}
                   `}
                   loading="lazy"
                 />
+
+                {/* --- LÓGICA DO GELO (APENAS TEMA GLACIAL) --- */}
+                {currentTheme === 'glacial' && (
+                  <FrostScratchLayer />
+                )}
                 
                 {/* Era Badge */}
-                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide z-10
+                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide z-30
                   ${attraction.era === 'glacial' ? 'bg-glacial-accent text-slate-900' : 
                     attraction.era === 'medieval' ? 'bg-medieval-red text-white' : 
                     'bg-future-neon text-white'}`}
@@ -107,7 +204,7 @@ export const Attractions: React.FC = () => {
 
                 {/* Futuristic HUD Overlay */}
                 {currentTheme === 'futuristic' && hoveredId === attraction.id && (
-                    <div className="absolute inset-0 border-2 border-future-cyan/50 p-4 flex flex-col justify-between animate-hologram pointer-events-none">
+                    <div className="absolute inset-0 border-2 border-future-cyan/50 p-4 flex flex-col justify-between animate-hologram pointer-events-none z-20">
                         <div className="flex justify-between">
                             <span className="w-2 h-2 bg-future-cyan"></span>
                             <span className="w-2 h-2 bg-future-cyan"></span>
