@@ -6,7 +6,8 @@ import { TicketModal } from './components/TicketModal';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeEffects } from './components/ThemeEffects';
-import { ThemeTransition } from './components/ThemeTransition'; // <--- IMPORTAR AQUI
+import { ThemeTransition } from './components/ThemeTransition'; 
+import { ThemeSwitcher } from './components/ThemeSwitcher'; // <--- 1. IMPORTAR
 import { Home } from './pages/Home';
 import { FullMenu } from './pages/FullMenu';
 
@@ -18,8 +19,10 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen text-slate-50 selection:bg-accent selection:text-slate-900 transition-colors duration-500 flex flex-col">
         <ThemeEffects />
         
-        {/* Adicione o ThemeTransition aqui, logo antes da Navbar */}
         <ThemeTransition /> 
+        
+        {/* 2. ADICIONAR O SWITCHER AQUI */}
+        <ThemeSwitcher />
         
         <Navbar onOpenTickets={() => setIsTicketModalOpen(true)} />
         

@@ -5,11 +5,11 @@ import { Hand } from 'lucide-react';
 
 // 1. IMPORTE AS IMAGENS AQUI
 import imgGelo from '../assets/Parque-de-Gelo.gif';
-import imgPlayground from '../assets/Playground.jpg';
+import imgPlayground from '../assets/Playground.webp';
 import imgMedieval from '../assets/Vila-medieval.png';
-import imgGuilhotina from '../assets/Guilhotina.jpg';
+import imgGuilhotina from '../assets/Guilhotina.webp';
 import imgTeatral from '../assets/Combate-sabre.png';
-import imgFuturistic from '../assets/Robo.jpg';
+import imgFuturistic from '../assets/Robo.webp';
 
 
 // --- DADOS ORIGINAIS ---

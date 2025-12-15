@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
-import { ChevronDown, Snowflake, Crown, Cpu, Zap, Shield } from 'lucide-react';
+import { ChevronDown } from 'lucide-react'; // Removemos Snowflake, Crown, Cpu pois não serão usados aqui
 import { useTheme } from '../context/ThemeContext';
 
 // Importação das Imagens dos Assets
-import medievalBg from '../assets/castelo-bg.jpg';
-import glacialCastle from '../assets/fundo-castelo.jpg';
-import glacialOverlay from '../assets/blue-background.jpg';
+import medievalBg from '../assets/castelo-bg.webp';
+import glacialCastle from '../assets/fundo-castelo.webp';
+import glacialOverlay from '../assets/blue-background.webp';
 
 interface HeroProps {
   onOpenTickets: () => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
-  const { currentTheme, setTheme } = useTheme();
+  const { currentTheme } = useTheme(); // Removemos setTheme pois não será usado aqui
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Efeito Parallax para Medieval/Futurista
@@ -98,62 +98,13 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
         )}
       </div>
 
-      {/* --- SELETOR DE TEMAS (BOTÕES LATERAIS) --- */}
-      <div className="absolute top-1/2 right-4 md:right-8 -translate-y-1/2 z-30 flex flex-col items-center gap-4 bg-black/20 p-3 rounded-full backdrop-blur-md border border-white/10 shadow-2xl">
-        <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest [writing-mode:vertical-rl] rotate-180 py-2">
-          Temas
-        </span>
-        <div className="flex flex-col gap-4">
-          
-          {/* Botão Glacial */}
-          <button 
-            onClick={() => setTheme('glacial')} 
-            className={`p-3 rounded-full transition-all duration-300 shadow-lg group relative
-              ${currentTheme === 'glacial' ? 'bg-cyan-400 text-slate-900 scale-125 ring-4 ring-cyan-400/30' : 'bg-slate-700 text-cyan-400 hover:bg-cyan-950 hover:scale-110'}
-            `} 
-            title="Era Glacial"
-          >
-            <Snowflake size={24} />
-            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Era Glacial
-            </span>
-          </button>
-
-          {/* Botão Medieval */}
-          <button 
-            onClick={() => setTheme('medieval')} 
-            className={`p-3 rounded-full transition-all duration-300 shadow-lg group relative
-              ${currentTheme === 'medieval' ? 'bg-amber-500 text-amber-950 scale-125 ring-4 ring-amber-500/30' : 'bg-slate-700 text-amber-500 hover:bg-amber-950 hover:scale-110'}
-            `} 
-            title="Era Medieval"
-          >
-            <Crown size={24} />
-            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Era Medieval
-            </span>
-          </button>
-
-          {/* Botão Futurista */}
-          <button 
-            onClick={() => setTheme('futuristic')} 
-            className={`p-3 rounded-full transition-all duration-300 shadow-lg group relative
-              ${currentTheme === 'futuristic' ? 'bg-fuchsia-500 text-white scale-125 ring-4 ring-fuchsia-500/30' : 'bg-slate-700 text-fuchsia-500 hover:bg-fuchsia-950 hover:scale-110'}
-            `} 
-            title="Era Futurística"
-          >
-            <Cpu size={24} />
-            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Era Futurística
-            </span>
-          </button>
-        </div>
-      </div>
+      {/* --- SELETOR DE TEMAS REMOVIDO DAQUI --- */}
 
       {/* --- CONTEÚDO CENTRAL --- */}
       <div className="container mx-auto px-4 relative z-10 text-center">
         
         {/* Tagline */}
-        <span className={`inline-block py-1 px-3 rounded-full text-sm font-bold mb-6 animate-fade-in border
+        <span className={`inline-block py-1 px-3 rounded-full text-sm font-bold mb-6 animate-fade-inWK border
           ${currentTheme === 'glacial' ? 'bg-white/20 text-white border-white/40 shadow-lg backdrop-blur-md' : 
             currentTheme === 'medieval' ? 'bg-[#f5e6d3]/10 text-[#f5e6d3] border-[#f5e6d3]/50 font-serif tracking-widest' : 
             currentTheme === 'futuristic' ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/50 font-mono' :
