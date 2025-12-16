@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
-import { ChevronDown, Snowflake, Crown, Cpu, Zap, Shield } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 // Importação das Imagens dos Assets
@@ -8,15 +8,16 @@ import medievalBg from '../assets/castelo-bg.webp';
 import glacialCastle from '../assets/fundo-castelo.webp';
 import glacialOverlay from '../assets/blue-background.webp';
 
-// Importação do GIF do Drone (Novo)
-import droneVideo from '../assets/drone-video.gif';
+// --- ATENÇÃO: COLE O LINK DO SEU VÍDEO AQUI ---
+// Exemplo: "https://res.cloudinary.com/sua-conta/video/upload/v1/nome-do-video.mp4"
+const VIDEO_URL = "https://res.cloudinary.com/dxplpg36m/video/upload/v1765849320/V%C3%ADdeo_Drone_Castelo_Setland_Gerado_emeqwk.mp4"; 
 
 interface HeroProps {
   onOpenTickets: () => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
-  const { currentTheme, setTheme } = useTheme();
+  const { currentTheme } = useTheme();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Efeito Parallax para Medieval/Futurista
@@ -91,13 +92,17 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none z-10"></div>
           </div>
 
-        /* 4. PADRÃO - Video Drone GIF */
+        /* 4. PADRÃO - Video Drone MP4 (Novo) */
         ) : (
-          <img 
-            src={droneVideo} 
-            alt="SetLand Drone View" 
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
             className="w-full h-full object-cover opacity-60"
-          />
+          >
+            <source src={VIDEO_URL} type="video/mp4" />
+          </video>
         )}
       </div>
 
