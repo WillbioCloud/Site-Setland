@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
-import { ChevronDown } from 'lucide-react'; // Removemos Snowflake, Crown, Cpu pois não serão usados aqui
+import { ChevronDown, Snowflake, Crown, Cpu, Zap, Shield } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 // Importação das Imagens dos Assets
@@ -8,12 +8,15 @@ import medievalBg from '../assets/castelo-bg.webp';
 import glacialCastle from '../assets/fundo-castelo.webp';
 import glacialOverlay from '../assets/blue-background.webp';
 
+// Importação do GIF do Drone (Novo)
+import droneVideo from '../assets/Vídeo_Drone_Castelo_Setland_Gerado.gif';
+
 interface HeroProps {
   onOpenTickets: () => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
-  const { currentTheme } = useTheme(); // Removemos setTheme pois não será usado aqui
+  const { currentTheme, setTheme } = useTheme();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Efeito Parallax para Medieval/Futurista
@@ -88,23 +91,21 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none z-10"></div>
           </div>
 
-        /* 4. PADRÃO */
+        /* 4. PADRÃO - Video Drone GIF */
         ) : (
           <img 
-            src="https://images.unsplash.com/photo-1599940824399-b87987ceb72a?q=80&w=1920&auto=format&fit=crop" 
-            alt="Hero Background" 
+            src={droneVideo} 
+            alt="SetLand Drone View" 
             className="w-full h-full object-cover opacity-60"
           />
         )}
       </div>
 
-      {/* --- SELETOR DE TEMAS REMOVIDO DAQUI --- */}
-
       {/* --- CONTEÚDO CENTRAL --- */}
       <div className="container mx-auto px-4 relative z-10 text-center">
         
         {/* Tagline */}
-        <span className={`inline-block py-1 px-3 rounded-full text-sm font-bold mb-6 animate-fade-inWK border
+        <span className={`inline-block py-1 px-3 rounded-full text-sm font-bold mb-6 animate-fade-in border
           ${currentTheme === 'glacial' ? 'bg-white/20 text-white border-white/40 shadow-lg backdrop-blur-md' : 
             currentTheme === 'medieval' ? 'bg-[#f5e6d3]/10 text-[#f5e6d3] border-[#f5e6d3]/50 font-serif tracking-widest' : 
             currentTheme === 'futuristic' ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/50 font-mono' :
