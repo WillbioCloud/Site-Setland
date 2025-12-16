@@ -101,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
           <div className={`flex gap-2 ${currentTheme === 'medieval' ? 'text-medieval-paper' : 'text-white'}`}>
-             <a href="#" className="hover:text-accent transition-colors drop-shadow-sm"><Instagram size={20} /></a>
+             <a href="https://www.instagram.com/7setland/" className="hover:text-accent transition-colors drop-shadow-sm"><Instagram size={20} /></a>
              <a href="#" className="hover:text-accent transition-colors drop-shadow-sm"><Facebook size={20} /></a>
           </div>
           <Button size="sm" onClick={onOpenTickets}>
