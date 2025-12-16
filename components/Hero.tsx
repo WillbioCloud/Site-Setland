@@ -9,7 +9,7 @@ import glacialCastle from '../assets/fundo-castelo.webp';
 import glacialOverlay from '../assets/blue-background.webp';
 
 // Importação do GIF do Drone (Novo)
-import droneVideo from '../assets/Vídeo_Drone_Castelo_Setland_Gerado.gif';
+import droneVideo from '../assets/drone-video.gif';
 
 interface HeroProps {
   onOpenTickets: () => void;
