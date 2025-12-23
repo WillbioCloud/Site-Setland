@@ -86,16 +86,16 @@ const erasData: EraData[] = [
     description: 'Enfrente -17°C e esculturas de gelo reais.',
     longDescription: 'O Parque de Gelo do Castelo Setland é uma das atrações mais frias e emocionantes do parque temático. Com uma temperatura média de 17 graus Celsius abaixo de zero, é um verdadeiro desafio para aqueles que procuram aventura e diversão. Lá dentro, os visitantes podem explorar esculturas de gelo incríveis e até um escorregador. Além disso, é possível experimentar a sensação de neve e gelo, algo raro na região do centro-oeste brasileiro. Para aqueles que se aventuram no Parque de Gelo, o Castelo Setland oferece casacos higienizados todos os dias e, para recuperar as energias, um delicioso chocolate quente para se aquecer.',
     details: ['Temperatura de -17°C', 'Esculturas de Gelo', 'Casacos Higienizados Inclusos'],
-    image: 'https://picsum.photos/seed/ice-bg/1200/600',
+    image: '../assets/Parque-de-Gelo.gif',
     color: 'bg-glacial-base',
     textColor: 'text-glacial-accent',
     buttonColor: 'bg-glacial-accent text-slate-900',
     rating: 4.9,
     duration: 'Tempo Livre',
     galleryImages: [
-      'https://picsum.photos/seed/ice1/600/400',
-      'https://picsum.photos/seed/ice2/600/400',
-      'https://picsum.photos/seed/ice3/600/400',
+      '../assets/Gelo1.png',
+      '../assets/Gelo2.png',
+      '../assets/Gelo3.jpg'
     ],
     attractionsList: [
       { name: 'Escorregador de Gelo', type: 'Radical', image: 'https://picsum.photos/seed/ice-attr1/300/200' },

@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Hand } from 'lucide-react';
 
 // 1. IMPORTE AS IMAGENS AQUI
-import imgGelo from '../assets/Parque-de-Gelo.gif';
+import imgGelo from '../assets/Glacial.jpg';
 import imgPlayground from '../assets/Playground.webp';
 import imgMedieval from '../assets/Vila-medieval.png';
 import imgGuilhotina from '../assets/Guilhotina.webp';
