@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { ChevronDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-// Importação das Imagens dos Assets
 import medievalBg from '../assets/castelo-bg.webp';
 import glacialCastle from '../assets/fundo-castelo.webp';
 import glacialOverlay from '../assets/blue-background.webp';
 
-// --- ATENÇÃO: COLE O LINK DO SEU VÍDEO AQUI ---
-// Exemplo: "https://res.cloudinary.com/sua-conta/video/upload/v1/nome-do-video.mp4"
-const VIDEO_URL = "https://res.cloudinary.com/dxplpg36m/video/upload/v1765849320/V%C3%ADdeo_Drone_Castelo_Setland_Gerado_emeqwk.mp4"; 
+const VIDEO_URL =
+  "https://res.cloudinary.com/dxplpg36m/video/upload/v1765849320/V%C3%ADdeo_Drone_Castelo_Setland_Gerado_emeqwk.mp4";
 
 interface HeroProps {
   onOpenTickets: () => void;
@@ -19,8 +17,10 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
   const { currentTheme } = useTheme();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [robotScale, setRobotScale] = useState(1);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Efeito Parallax para Medieval/Futurista
+  /* ================= MOUSE PARALLAX ================= */
   const handleMouseMove = (e: React.MouseEvent) => {
     if (currentTheme === 'medieval' || currentTheme === 'futuristic') {
       const { clientX, clientY } = e;
@@ -30,69 +30,82 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTickets }) => {
     }
   };
 
+  /* ================= ZOOM NO SCROLL (ROBO) ================= */
+  useEffect(() => {
+    if (currentTheme !== 'futuristic') return;
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const maxScroll = window.innerHeight * 1.2;
+
+      const progress = Math.min(scrollY / maxScroll, 1);
+      const scale = 1 + progress * 1.35; // até ~1.35
+
+      setRobotScale(scale);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [currentTheme]);
+
   const scrollToEras = () => {
     document.querySelector('#eras')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <section 
-      id="hero" 
+    <section
+      id="hero"
       className="relative h-screen flex items-center justify-center overflow-hidden transition-colors duration-700 bg-slate-900"
       onMouseMove={handleMouseMove}
     >
-      {/* --- CAMADA DE FUNDO (BACKGROUNDS) --- */}
+      {/* ================= FUNDO ================= */}
       <div className="absolute inset-0 z-0 opacity-90 overflow-hidden">
-        
-        {/* 1. TEMA GLACIAL (Castelo + Overlay Azul) */}
+
+        {/* GLACIAL */}
         {currentTheme === 'glacial' ? (
-           <>
-             {/* Imagem do Castelo Base */}
-             <div className="absolute inset-0">
-                <img 
-                  src={glacialCastle} 
-                  alt="Castelo de Gelo" 
-                  className="w-full h-full object-cover filter brightness-90 contrast-110 hue-rotate-[10deg]"
-                />
-             </div>
-
-             {/* Background Azul por cima (Overlay) */}
-             <div className="absolute inset-0 opacity-110 mix-blend-overlay">
-                <img 
-                  src={glacialOverlay} 
-                  alt="Textura de Gelo" 
-                  className="w-full h-full object-cover"
-                />
-             </div>
-
-             {/* Gradiente para leitura do texto */}
-             <div className="absolute inset-0 bg-gradient-to-t from-[#e0f7fa] via-white/10 to-transparent mix-blend-overlay"></div>
-             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-900/20 to-cyan-900/60"></div>
-             
-             {/* Efeito de Neve Caindo (CSS Puro) */}
-             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/snow.png')] opacity-30 animate-pulse"></div>
-           </>
-
-        /* 2. TEMA MEDIEVAL */
+          <>
+            <img
+              src={glacialCastle}
+              alt="Castelo de Gelo"
+              className="w-full h-full object-cover filter brightness-90 contrast-110 hue-rotate-[10deg]"
+            />
+            <img
+              src={glacialOverlay}
+              alt="Textura de Gelo"
+              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-900/20 to-cyan-900/60" />
+          </>
         ) : currentTheme === 'medieval' ? (
           <>
-            <img 
-              src={medievalBg} 
-              alt="Castelo Medieval" 
+            <img
+              src={medievalBg}
+              alt="Castelo Medieval"
               className="w-full h-full object-cover sepia-[0.3] scale-105"
-              style={{ transform: `scale(1.1) translate(${mousePos.x * -1}px, ${mousePos.y * -1}px)` }}
+              style={{
+                transform: `scale(1.1) translate(${mousePos.x * -1}px, ${mousePos.y * -1}px)`
+              }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#2a1b15] via-[#2a1b15]/60 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#2a1b15] via-[#2a1b15]/60 to-transparent" />
           </>
-
-        /* 3. TEMA FUTURISTA */
         ) : currentTheme === 'futuristic' ? (
-          <div className="w-full h-full bg-black relative">
-             <div className="absolute inset-0 bg-[linear-gradient(rgba(0,243,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.1)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
-             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_90%)]"></div>
-             <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none z-10"></div>
-          </div>
+          <div className="relative w-full h-full bg-black overflow-hidden">
 
-        /* 4. PADRÃO - Video Drone MP4 (Novo) */
+            {/* ROBÔ 3D (INTERATIVO + ZOOM) */}
+            <iframe
+              ref={iframeRef}
+              src="https://my.spline.design/nexbotrobotcharacterconcept-AsVPy3klbyluz38LyvcH0hWz/"
+              className="absolute inset-0 w-full h-full transition-transform duration-75"
+              style={{
+                transform: `scale(${robotScale})`
+              }}
+              frameBorder="0"
+            />
+
+            {/* OVERLAYS (NÃO BLOQUEIAM MOUSE) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60 pointer-events-none z-10" />
+          </div>
         ) : (
           <video
             autoPlay

@@ -4,7 +4,7 @@ import {
   Ticket, Shield, Zap, Snowflake, ChevronRight, ArrowLeft 
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { Button } from './Button';
+import { Button } from '../components/Button';
 
 interface TicketModalProps {
   isOpen: boolean;
