@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
-import { Snowflake, Shield, Zap, X, ArrowRight, Clock, Star, MapPin, Play, Ticket } from 'lucide-react';
+import { Snowflake, Shield, Zap, X, ArrowRight, Clock, Star, MapPin, Ticket } from 'lucide-react';
 import { ThemeEra } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from './Button';
 
 // --- Helper Component: Snow Effect ---
 const SnowOverlay = () => {
-  // Cria flocos de neve aleatórios
   const flakes = Array.from({ length: 30 }).map((_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
@@ -69,7 +68,6 @@ interface EraData {
   color: string;
   textColor: string;
   buttonColor: string;
-  // New Rich Fields
   rating: number;
   duration: string;
   videoUrl?: string;
@@ -192,23 +190,37 @@ export const Eras: React.FC = () => {
     
     setTimeout(() => {
       setExpandedEraId(null);
-      setTheme('default');
+      // setTheme('default'); // Opcional: manter o tema da última era visitada
       setIsAnimating(false);
     }, 500);
-  }, [expandedEraId, setTheme]);
+  }, [expandedEraId]);
 
+  // Lógica de "Próxima Era" sem fechar o modal
   const handleNextEra = useCallback(() => {
     if (!expandedEraId) return;
     const currentIndex = erasData.findIndex(e => e.id === expandedEraId);
     const nextIndex = (currentIndex + 1) % erasData.length;
     const nextEra = erasData[nextIndex];
 
-    handleClose();
+    // Atualiza o activeRect para o card da próxima era
+    // Isso garante que se o usuário fechar depois, a animação volte para o card certo
+    const nextEl = cardRefs.current.get(nextEra.id);
+    if (nextEl) {
+        const rect = nextEl.getBoundingClientRect();
+        setActiveRect(rect);
+    }
 
-    setTimeout(() => {
-        handleCardClick(nextEra);
-    }, 600);
-  }, [expandedEraId, handleClose]);
+    // Troca o conteúdo e o tema instantaneamente
+    setExpandedEraId(nextEra.id);
+    setTheme(nextEra.id);
+    
+    // Rola para o topo do modal suavemente para ver o novo conteúdo
+    const modalContent = document.querySelector('.modal-content-scroll');
+    if (modalContent) {
+        modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+  }, [expandedEraId, setTheme]);
 
   useEffect(() => {
     document.body.style.overflow = expandedEraId ? 'hidden' : '';
@@ -387,7 +399,8 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
             </button>
 
             {/* Content Container - Only visible after expansion starts */}
-            <div className={`flex-1 overflow-y-auto no-scrollbar relative transition-opacity duration-500 z-40 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Adicionei a classe 'modal-content-scroll' para o handleNextEra conseguir rolar pro topo */}
+            <div className={`modal-content-scroll flex-1 overflow-y-auto no-scrollbar relative transition-opacity duration-500 z-40 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
                 
                 {/* Hero Banner inside Modal */}
                 <div className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden">
@@ -435,23 +448,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
                                 {era.longDescription}
                             </p>
 
-                            {/* Attractions List Mini-Cards */}
-                            <div>
-                                <h3 className={`text-2xl font-bold mb-6 ${era.id === 'medieval' ? 'text-[#5c4033]' : 'text-white'}`}>Atrações Principais</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {era.attractionsList.map((attr, idx) => (
-                                        <div key={idx} className="bg-white/5 rounded-xl overflow-hidden hover:bg-white/10 transition-colors border border-white/10 group backdrop-blur-sm">
-                                            <div className="h-32 overflow-hidden">
-                                                <img src={attr.image} alt={attr.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                            </div>
-                                            <div className="p-4">
-                                                <span className={`text-xs font-bold uppercase ${era.textColor}`}>{attr.type}</span>
-                                                <h4 className={`font-bold mt-1 ${era.id === 'medieval' ? 'text-[#2a1b15]' : 'text-white'}`}>{attr.name}</h4>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            {/* REMOVIDO: Seção "Atrações Principais" (Lista de mini-cards) retirada daqui */}
 
                             {/* Gallery Scroll */}
                             <div>
@@ -484,11 +481,7 @@ const EraModal: React.FC<EraModalProps> = ({ era, initialRect, onClose, onNext }
                                 <Button fullWidth className="mb-3 flex items-center justify-center gap-2">
                                     <Ticket size={18} /> Comprar Ingresso
                                 </Button>
-                                <button className={`w-full py-3 rounded-lg border flex items-center justify-center gap-2 transition-colors
-                                    ${era.id === 'medieval' ? 'border-[#5c4033] text-[#5c4033] hover:bg-[#5c4033]/10' : 'border-white/20 text-white hover:bg-white/10'}
-                                `}>
-                                    <Play size={18} /> Ver Vídeo
-                                </button>
+                                {/* REMOVIDO: Botão "Ver Vídeo" retirado daqui */}
                             </div>
 
                             {/* Navigation */}
