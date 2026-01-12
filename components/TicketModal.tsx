@@ -1,29 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, Users, CreditCard, CheckCircle, 
-  Ticket, Shield, Zap, Snowflake, ChevronRight, ArrowLeft 
+  Ticket, Shield, Zap, Snowflake, ChevronRight, ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/Button';
 
+// --- IMPORTAÇÃO DAS IMAGENS ---
+import medievalBg from '../assets/castelo-bg.webp';
+// Glacial agora usa duas camadas, igual ao Hero
+import glacialCastle from '../assets/fundo-castelo.webp';
+import glacialOverlay from '../assets/blue-background.webp';
+import futureBg from '../assets/Robo.webp'; 
+
 interface TicketModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCheckout?: (data: CheckoutData) => Promise<void>;
 }
 
-export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => {
+export interface CheckoutData {
+  theme: string;
+  visitDate: string;
+  tickets: {
+    adult: number;
+    child: number;
+    senior: number;
+  };
+  customer: {
+    name: string;
+    email: string;
+    cpf: string;
+    phone: string;
+  };
+  totalAmount: number;
+  paymentMethod: 'pix' | 'credit_card';
+}
+
+export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, onCheckout }) => {
   const [step, setStep] = useState(1);
   const [date, setDate] = useState('');
   const [tickets, setTickets] = useState({ adult: 1, child: 0, senior: 0 });
+  
+  const [customer, setCustomer] = useState({ name: '', email: '', cpf: '', phone: '' });
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const { currentTheme } = useTheme();
 
-  // Resetar estado ao abrir
   useEffect(() => {
     if (isOpen) {
       setStep(1);
       setTickets({ adult: 1, child: 0, senior: 0 });
       setDate('');
-      // Bloqueia scroll do body quando modal abre no mobile
+      setIsProcessing(false);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
@@ -33,11 +64,19 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
 
   if (!isOpen) return null;
 
-  // Preços
   const PRICES = { adult: 89.90, child: 44.90, senior: 44.90 };
   const total = (tickets.adult * PRICES.adult) + (tickets.child * PRICES.child) + (tickets.senior * PRICES.senior);
 
-  // --- Lógica de Temas ---
+  // Mapeamento de imagens para outros temas
+  const themeImages = {
+    medieval: medievalBg,
+    futuristic: futureBg,
+    glacial: glacialCastle, // Fallback
+    default: medievalBg
+  };
+  
+  const activeImage = themeImages[currentTheme as keyof typeof themeImages] || themeImages.default;
+
   const getThemeContent = () => {
     switch (currentTheme) {
       case 'futuristic':
@@ -48,10 +87,9 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
           accent: 'text-[#00f3ff]',
           accentBg: 'bg-[#00f3ff]',
           border: 'border-[#00f3ff]',
-          title: 'TERMINAL', // Encurtei para caber melhor no mobile
+          title: 'TERMINAL', 
           subtitle: 'Selecione ciclo de visita.',
-          labels: { adult: 'HUMANO', child: 'MINI', senior: 'VETERANO' }, // Encurtei labels
-          currency: 'CRÉDITOS',
+          labels: { adult: 'HUMANO', child: 'MINI', senior: 'VETERANO' },
           icon: <Zap size={24} className="text-[#00f3ff]" />,
           buttonClass: 'bg-[#00f3ff] text-black hover:bg-white hover:text-black font-future uppercase tracking-widest clip-path-slant',
           inputClass: 'bg-black border border-[#00f3ff] text-[#00f3ff] font-mono focus:shadow-[0_0_15px_#00f3ff]'
@@ -67,7 +105,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
           title: 'Tesouro Real',
           subtitle: 'Salvo-conduto.',
           labels: { adult: 'Nobre', child: 'Escudeiro', senior: 'Sábio' },
-          currency: 'OURO',
           icon: <Shield size={24} className="text-[#800000]" />,
           buttonClass: 'bg-[#800000] text-[#f5e6d3] hover:bg-[#5c4033] font-medieval border-2 border-[#5c4033] shadow-lg',
           inputClass: 'bg-[#eaddcf] border-b-2 border-[#5c4033] text-[#4a3728] font-serif focus:bg-[#dcc8b6]'
@@ -75,7 +112,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
       case 'glacial':
         return {
           bgOverlay: 'bg-[#0f172a]/80 backdrop-blur-md',
-          modalBg: 'bg-[#e0f7fa] border border-cyan-300 shadow-[0_0_40px_rgba(34,211,238,0.4)]', // Tirei backdrop-blur do bg interno p/ mobile
+          modalBg: 'bg-[#e0f7fa] border border-cyan-300 shadow-[0_0_40px_rgba(34,211,238,0.4)]',
           text: 'text-cyan-900 font-display',
           accent: 'text-cyan-600',
           accentBg: 'bg-cyan-500',
@@ -83,7 +120,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
           title: 'Expedição',
           subtitle: 'Entrada no gelo.',
           labels: { adult: 'Explorador', child: 'Pinguim', senior: 'Veterano' },
-          currency: 'BRL',
           icon: <Snowflake size={24} className="text-cyan-500" />,
           buttonClass: 'bg-cyan-500 text-white hover:bg-cyan-600 shadow-md rounded-xl',
           inputClass: 'bg-white border border-cyan-200 text-cyan-900 focus:ring-2 focus:ring-cyan-400 rounded-lg'
@@ -99,7 +135,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
           title: 'Bilheteria',
           subtitle: 'Seus ingressos.',
           labels: { adult: 'Adulto', child: 'Infantil', senior: 'Sênior' },
-          currency: 'R$',
           icon: <Ticket size={24} className="text-accent" />,
           buttonClass: 'bg-accent text-slate-900 hover:bg-yellow-400 font-bold rounded-lg',
           inputClass: 'bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-accent'
@@ -109,26 +144,41 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
 
   const theme = getThemeContent();
 
+  const handleConfirmPurchase = async () => {
+    setIsProcessing(true);
+    const orderPayload: CheckoutData = {
+        theme: currentTheme,
+        visitDate: date,
+        tickets: tickets,
+        customer: customer,
+        totalAmount: total,
+        paymentMethod: paymentMethod
+    };
+    console.log("Enviando Pedido:", orderPayload);
+    if (onCheckout) {
+        await onCheckout(orderPayload);
+    } else {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    setIsProcessing(false);
+    setStep(4);
+  };
+
   return (
-    // MUDANÇA: p-0 no mobile para ocupar tela toda
     <div className={`fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 ${theme.bgOverlay} transition-all duration-500`}>
       
-      {/* Container Principal */}
-      {/* MUDANÇA: h-full w-full para mobile (Fullscreen), rounded-none no mobile */}
       <div className={`w-full max-w-4xl h-full md:h-auto md:max-h-[85vh] flex flex-col md:flex-row overflow-hidden relative animate-slide-up 
         ${theme.modalBg} 
         ${currentTheme === 'futuristic' ? 'rounded-none' : 'rounded-none md:rounded-3xl'}`
       }>
         
-        {/* Decorativos (apenas desktop para economizar espaço visual no mobile) */}
         {currentTheme === 'futuristic' && (
             <>
-                <div className="hidden md:block absolute top-0 left-0 w-32 h-32 border-l-4 border-t-4 border-[#00f3ff] rounded-tl-3xl opacity-50 pointer-events-none"></div>
-                <div className="hidden md:block absolute bottom-0 right-0 w-32 h-32 border-r-4 border-b-4 border-[#00f3ff] rounded-br-3xl opacity-50 pointer-events-none"></div>
+                <div className="hidden md:block absolute top-0 left-0 w-32 h-32 border-l-4 border-t-4 border-[#00f3ff] rounded-tl-3xl opacity-50 pointer-events-none z-10"></div>
+                <div className="hidden md:block absolute bottom-0 right-0 w-32 h-32 border-r-4 border-b-4 border-[#00f3ff] rounded-br-3xl opacity-50 pointer-events-none z-10"></div>
             </>
         )}
 
-        {/* Botão Fechar - Maior e mais fácil de clicar no mobile */}
         <button 
           onClick={onClose}
           className={`absolute top-2 right-2 md:top-4 md:right-4 z-50 p-3 rounded-full transition-colors 
@@ -139,35 +189,57 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
           <X size={28} />
         </button>
 
-        {/* Lado Esquerdo: Resumo / Visual 
-            MUDANÇA: No mobile, isso vira um Header compacto (shrink-0)
-        */}
-        <div className={`w-full md:w-1/3 p-5 md:p-8 flex flex-col justify-between relative shrink-0
-            ${currentTheme === 'futuristic' ? 'bg-[#00f3ff]/5 md:border-r border-b md:border-b-0 border-[#00f3ff]/30' : 
+        {/* --- COLUNA ESQUERDA (VISUAL) --- */}
+        <div className={`w-full md:w-1/3 p-5 md:p-8 flex flex-col justify-between relative shrink-0 overflow-hidden
+            ${currentTheme === 'futuristic' ? 'bg-black/80 md:border-r border-b md:border-b-0 border-[#00f3ff]/30' : 
               currentTheme === 'medieval' ? 'bg-[#eaddcf] md:border-r-2 border-b-2 md:border-b-0 border-[#5c4033] border-dashed' : 
-              currentTheme === 'glacial' ? 'bg-cyan-50/50 border-b md:border-b-0 border-cyan-200' : 
+              currentTheme === 'glacial' ? 'bg-cyan-900/20 border-b md:border-b-0 border-cyan-200' : 
               'bg-slate-900 md:border-r border-b md:border-b-0 border-slate-700'}`
         }>
-            {/* Background Image (Desktop Only) */}
-            <div className="hidden md:block absolute inset-0 opacity-10 pointer-events-none">
-                <img 
-                    src={currentTheme === 'medieval' ? "https://www.transparenttextures.com/patterns/wood-pattern.png" : ""} 
-                    className="w-full h-full object-cover" 
-                />
+            
+            {/* Lógica de Fundo Personalizada (Glacial vs Outros) */}
+            <div className="absolute inset-0 z-0">
+                {currentTheme === 'glacial' ? (
+                   <>
+                      {/* Efeito Glacial: Base + Overlay Azul Pulsante (Igual ao Hero) */}
+                      <div className="absolute inset-0 bg-[#0f1c2e]"></div>
+                      <img 
+                        src={glacialCastle} 
+                        alt="Castelo Glacial" 
+                        className="w-full h-full object-cover opacity-80" 
+                      />
+                      <img 
+                        src={glacialOverlay} 
+                        alt="Efeito Glacial" 
+                        className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-40 animate-pulse-slow" 
+                      />
+                   </>
+                ) : (
+                    /* Imagem Padrão para os outros temas */
+                    <img 
+                        src={activeImage} 
+                        alt="Tema" 
+                        className={`w-full h-full object-cover transition-opacity duration-500
+                            ${currentTheme === 'medieval' ? 'opacity-20 sepia' : 'opacity-40'}
+                        `} 
+                    />
+                )}
+                
+                {/* Overlay Gradiente comum a todos */}
+                <div className={`absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50 md:bg-gradient-to-t md:from-black/80 md:to-transparent`}></div>
             </div>
 
-            <div className="flex md:block items-center justify-between">
+            <div className="relative z-10 flex md:block items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-6">
                       {theme.icon}
-                      <span className={`text-sm md:text-xl font-bold tracking-wider ${theme.text} opacity-80`}>SETLAND</span>
+                      <span className={`text-sm md:text-xl font-bold tracking-wider ${theme.text} opacity-80 drop-shadow-md`}>SETLAND</span>
                   </div>
-                  <h2 className={`text-2xl md:text-4xl font-bold leading-tight ${theme.text}`}>
+                  <h2 className={`text-2xl md:text-4xl font-bold leading-tight ${theme.text} drop-shadow-lg`}>
                       {theme.title}
                   </h2>
                 </div>
                 
-                {/* Visualizador de Total Compacto para Mobile (Cabeçalho) */}
                 <div className="md:hidden text-right">
                     <p className={`text-xs opacity-70 ${theme.text}`}>Total</p>
                     <span className={`text-xl font-bold ${theme.accent}`}>
@@ -176,15 +248,14 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                 </div>
             </div>
             
-            <p className={`hidden md:block text-sm opacity-70 mb-8 ${theme.text}`}>
+            <p className={`relative z-10 hidden md:block text-sm opacity-90 mb-8 ${theme.text} font-medium`}>
                 {theme.subtitle}
             </p>
 
-            {/* Resumo do Pedido (Mais detalhado no Desktop, oculto ou simplificado no Mobile Step 1) */}
-            <div className={`hidden md:block p-4 rounded-xl space-y-3 
-                ${currentTheme === 'futuristic' ? 'border border-[#00f3ff]/30 bg-black/50' : 
-                  currentTheme === 'medieval' ? 'border border-[#5c4033]/30 bg-[#fffdf5]' : 
-                  'bg-white/5 border border-white/10'}`
+            <div className={`relative z-10 hidden md:block p-4 rounded-xl space-y-3 backdrop-blur-md
+                ${currentTheme === 'futuristic' ? 'border border-[#00f3ff]/30 bg-black/60' : 
+                  currentTheme === 'medieval' ? 'border border-[#5c4033]/30 bg-[#fffdf5]/80' : 
+                  'bg-white/10 border border-white/10'}`
             }>
                 <h3 className={`text-xs uppercase tracking-widest font-bold opacity-60 ${theme.text}`}>Resumo</h3>
                 
@@ -196,7 +267,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                 )}
                 
                 <div className="space-y-1">
-                   {/* Lógica simples de resumo */}
                    <div className={`flex justify-between text-sm ${theme.text} opacity-80`}>
                       <span>{tickets.adult + tickets.child + tickets.senior} Ingressos</span>
                    </div>
@@ -211,21 +281,19 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                 </div>
             </div>
 
-            {/* Steps Indicator */}
-            <div className="hidden md:flex gap-2 mt-8">
+            <div className="relative z-10 hidden md:flex gap-2 mt-8">
                 {[1, 2, 3].map(i => (
                     <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 
-                        ${step >= i ? theme.accentBg : 'bg-gray-500/20'}`} 
+                        ${step >= i ? theme.accentBg : 'bg-gray-500/40'}`} 
                     />
                 ))}
             </div>
         </div>
 
-        {/* Lado Direito: Formulário */}
-        {/* MUDANÇA: flex-1 para ocupar o resto da tela no mobile e overflow-y-auto para rolar apenas o conteúdo */}
+        {/* --- COLUNA DIREITA (FORMULÁRIO) --- */}
         <div className="w-full md:w-2/3 flex-1 overflow-y-auto p-5 md:p-8 relative bg-transparent">
             
-            {/* Steps Indicator Mobile (Topo do conteúdo) */}
+            {/* Steps Indicator Mobile */}
             <div className="flex md:hidden gap-2 mb-6">
                 {[1, 2, 3].map(i => (
                     <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 
@@ -237,8 +305,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
             {/* STEP 1: Seleção */}
             {step === 1 && (
                 <div className="space-y-6 md:space-y-8 animate-fade-in pb-20">
-                    
-                    {/* Seleção de Data */}
                     <div>
                         <label className={`block text-xs md:text-sm font-bold mb-3 uppercase tracking-wider ${theme.text}`}>
                             1. Escolha a Data
@@ -248,18 +314,15 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                             min={new Date().toISOString().split('T')[0]}
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
-                            // MUDANÇA: p-3 no mobile para touch target
                             className={`w-full p-3 md:p-4 outline-none transition-all rounded-lg appearance-none ${theme.inputClass}`}
                         />
                     </div>
 
-                    {/* Seleção de Ingressos */}
                     <div>
                         <label className={`block text-xs md:text-sm font-bold mb-3 uppercase tracking-wider ${theme.text}`}>
                             2. Selecione os Ingressos
                         </label>
                         <div className="space-y-3 md:space-y-4">
-                            {/* Adulto */}
                             <TicketCounter 
                                 label={theme.labels.adult}
                                 price={PRICES.adult}
@@ -268,7 +331,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                                 theme={theme}
                                 currentTheme={currentTheme}
                             />
-                            {/* Criança */}
                             <TicketCounter 
                                 label={theme.labels.child}
                                 subLabel="06-12 anos"
@@ -278,7 +340,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                                 theme={theme}
                                 currentTheme={currentTheme}
                             />
-                            {/* Senior */}
                             <TicketCounter 
                                 label={theme.labels.senior}
                                 subLabel="60+ anos"
@@ -315,26 +376,52 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className={`text-xs uppercase font-bold ${theme.text}`}>Nome Completo</label>
-                            <input type="text" placeholder="Seu nome" className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} />
+                            <input 
+                                type="text" 
+                                placeholder="Seu nome" 
+                                value={customer.name}
+                                onChange={(e) => setCustomer({...customer, name: e.target.value})}
+                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
+                            />
                         </div>
                         <div className="space-y-2">
                             <label className={`text-xs uppercase font-bold ${theme.text}`}>E-mail</label>
-                            <input type="email" inputMode="email" placeholder="seu@email.com" className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} />
+                            <input 
+                                type="email" 
+                                inputMode="email" 
+                                placeholder="seu@email.com" 
+                                value={customer.email}
+                                onChange={(e) => setCustomer({...customer, email: e.target.value})}
+                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
+                            />
                         </div>
                         <div className="space-y-2">
                             <label className={`text-xs uppercase font-bold ${theme.text}`}>CPF</label>
-                            <input type="tel" placeholder="000.000.000-00" className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} />
+                            <input 
+                                type="tel" 
+                                placeholder="000.000.000-00" 
+                                value={customer.cpf}
+                                onChange={(e) => setCustomer({...customer, cpf: e.target.value})}
+                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
+                            />
                         </div>
                         <div className="space-y-2">
                             <label className={`text-xs uppercase font-bold ${theme.text}`}>Celular</label>
-                            <input type="tel" placeholder="(00) 00000-0000" className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} />
+                            <input 
+                                type="tel" 
+                                placeholder="(00) 00000-0000" 
+                                value={customer.phone}
+                                onChange={(e) => setCustomer({...customer, phone: e.target.value})}
+                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
+                            />
                         </div>
                     </div>
 
                     <div className="pt-4">
                         <button 
                             onClick={() => setStep(3)}
-                            className={`w-full py-4 flex items-center justify-center gap-2 transition-all text-sm md:text-base ${theme.buttonClass}`}
+                            disabled={!customer.name || !customer.email}
+                            className={`w-full py-4 flex items-center justify-center gap-2 transition-all disabled:opacity-50 text-sm md:text-base ${theme.buttonClass}`}
                         >
                             Ir para Pagamento <CreditCard size={20} />
                         </button>
@@ -352,7 +439,12 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                     <h3 className={`text-xl md:text-2xl font-bold ${theme.text}`}>Pagamento</h3>
 
                     <div className="space-y-3">
-                        <button className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-95 ${theme.border} ${theme.text}`}>
+                        <button 
+                            onClick={() => setPaymentMethod('pix')}
+                            className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-95 ${theme.text}
+                                ${paymentMethod === 'pix' ? `bg-white/10 ${theme.border}` : 'border-transparent hover:bg-white/5'}
+                            `}
+                        >
                             <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 shrink-0">
                                 <Zap size={20} />
                             </div>
@@ -360,10 +452,17 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                                 <div className="font-bold">PIX</div>
                                 <div className="text-xs opacity-70">Aprovação Imediata</div>
                             </div>
-                            <div className={`w-4 h-4 rounded-full border ${theme.border}`}></div>
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${theme.border}`}>
+                                {paymentMethod === 'pix' && <div className={`w-2 h-2 rounded-full ${theme.accentBg}`}></div>}
+                            </div>
                         </button>
 
-                        <button className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-95 ${theme.border} ${theme.text}`}>
+                        <button 
+                            onClick={() => setPaymentMethod('credit_card')}
+                            className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-95 ${theme.text}
+                                ${paymentMethod === 'credit_card' ? `bg-white/10 ${theme.border}` : 'border-transparent hover:bg-white/5'}
+                            `}
+                        >
                             <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
                                 <CreditCard size={20} />
                             </div>
@@ -371,19 +470,26 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                                 <div className="font-bold">Cartão</div>
                                 <div className="text-xs opacity-70">Até 3x sem juros</div>
                             </div>
-                            <div className={`w-4 h-4 rounded-full border ${theme.border}`}></div>
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${theme.border}`}>
+                                {paymentMethod === 'credit_card' && <div className={`w-2 h-2 rounded-full ${theme.accentBg}`}></div>}
+                            </div>
                         </button>
                     </div>
 
                     <div className="pt-4">
                         <button 
-                            onClick={() => setStep(4)}
-                            className={`w-full py-4 flex items-center justify-center gap-2 transition-all text-sm md:text-base ${theme.buttonClass}`}
+                            onClick={handleConfirmPurchase}
+                            disabled={isProcessing}
+                            className={`w-full py-4 flex items-center justify-center gap-2 transition-all text-sm md:text-base ${theme.buttonClass} disabled:opacity-70`}
                         >
-                            Confirmar Compra
+                            {isProcessing ? (
+                                <><Loader2 className="animate-spin" /> Processando...</>
+                            ) : (
+                                "Confirmar Compra"
+                            )}
                         </button>
                         <p className={`text-center text-xs mt-3 opacity-50 ${theme.text}`}>
-                            Ambiente Seguro.
+                            Ambiente 100% Seguro.
                         </p>
                     </div>
                 </div>
@@ -403,7 +509,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
                         {currentTheme === 'medieval' ? 'Glória ao Reino!' : 'Sucesso!'}
                     </h2>
                     <p className={`mb-8 max-w-xs mx-auto opacity-70 text-sm md:text-base ${theme.text}`}>
-                        Seus ingressos foram enviados para seu e-mail.
+                        Seus ingressos foram enviados para <strong>{customer.email}</strong>.
                     </p>
                     <div className={`p-4 rounded-lg mb-8 font-mono text-lg tracking-widest border border-dashed ${theme.border} ${theme.text}`}>
                         #SL-{Math.floor(Math.random() * 99999)}
@@ -423,7 +529,6 @@ export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose }) => 
   );
 };
 
-// Sub-componente para contador de ingressos (Ajustado tamanho mobile)
 const TicketCounter: React.FC<{ 
     label: string, 
     subLabel?: string, 
