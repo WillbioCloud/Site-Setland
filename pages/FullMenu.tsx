@@ -31,7 +31,7 @@ const menuData: MenuCategory[] = [
     id: 'couvert',
     title: 'Couvert',
     icon: <Wheat size={18} />,
-    image: '../assets/entradas.jpg',
+    image: 'https://res.cloudinary.com/dxplpg36m/image/upload/v1768182449/entradas_2_v8m69u.png',
     items: [
       { name: 'PÃO ÁZIMO', price: 'R$ 7,77', description: 'Com manteiga de erva e caponata de berinjela.' },
     ]
@@ -129,7 +129,7 @@ const menuData: MenuCategory[] = [
     id: 'suinos',
     title: 'Suínos',
     icon: <span className="text-lg">🥓</span>,
-    image: '../assets/suinos.jpg',
+    image: 'https://img.freepik.com/fotos-gratis/porchetta-assada-caseira-em-paezinhos-com-varias-ervas-pimenta-e-alho_127032-3183.jpg?t=st=1768191729~exp=1768195329~hmac=62b82e5be39b2e6e26e0f98688319eb4637442a132ef42f475770f563ccb626e',
     items: [
       { name: 'LEITÃO ASSADO COM ERVAS', price: 'R$ 127,77', description: 'Arroz branco, mandioca frita, legumes assados, abóbora, batata, banana da terra, batata doce, farofa brasil e vinagrete.' },
       { name: 'COSTELINHA SUÍNA', price: 'R$ 127,77', description: 'Arroz branco, batata frita, farofa brasil, vinagrete e molho barbecue.' },
@@ -140,7 +140,7 @@ const menuData: MenuCategory[] = [
     id: 'bovinos',
     title: 'Bovinos (2P)',
     icon: <Beef size={18} />,
-    image: 'https://images.unsplash.com/photo-1558030006-47906773d19d?q=80&w=800&auto=format&fit=crop',
+    image: 'https://img.freepik.com/fotos-gratis/bife-de-costelas-frescas-na-mesa_140725-7014.jpg?t=st=1768191804~exp=1768195404~hmac=22ce4fc7e791fb3eb328e9c9d09358abde79be4087ae1be640e44d85c7d5a263',
     items: [
       { name: 'FILÉ MIGNON', price: 'R$ 147,77', description: 'Arroz de alho, farofa de maracujá, legumes assados, abóbora, batata, banana da terra, batata doce e vinagrete.' },
       { name: 'PICANHA NA CHAPA', price: 'R$ 167,77', description: 'Arroz branco, feijão tropeiro, pão de alho, banana grelhada, mandioca na manteiga e vinagrete.' },
@@ -163,7 +163,7 @@ const menuData: MenuCategory[] = [
     id: 'frutos-mar',
     title: 'Frutos do Mar',
     icon: <span className="text-lg">🦐</span>,
-    image: 'https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?q=80&w=800&auto=format&fit=crop',
+    image: 'https://img.freepik.com/fotos-gratis/conceito-de-nutricao-equilibrada-para-uma-dieta-mediterranea-flexitariana-de-alimentacao-limpa-vista-superior-plana-nutricao-conceito-de-comida-de-comer-limpo-plano-de-dieta-com-vitaminas-e-minerais-salmao-e-camarao-misture-vegetais_1150-44831.jpg?t=st=1768191935~exp=1768195535~hmac=e30c0152e95d05821bb25ca0a36a87f93ea9fe36f1ab245827e8cf79356521c1',
     items: [
       { name: 'SALMÃO AO MOLHO DE ALCAPARRAS', price: 'R$ 157,77', description: 'Arroz de castanha, batata rústica, molho de alcaparras com champignon e salada.' },
       { name: 'SALMÃO AO MOLHO DE MARACUJÁ', price: 'R$ 157,77', description: 'Arroz cremoso, molho de maracujá, batata rústica e salada.' },
@@ -216,7 +216,7 @@ const menuData: MenuCategory[] = [
     id: 'drinks',
     title: 'Drinks',
     icon: <span className="text-lg">🍹</span>,
-    image: 'https://images.unsplash.com/photo-1536935338788-843bb6d8d992?q=80&w=800&auto=format&fit=crop',
+    image: 'https://img.freepik.com/fotos-gratis/mistura-de-alto-angulo-de-bebidas-alcoolicas_23-2148673763.jpg?t=st=1768192508~exp=1768196108~hmac=582a848b45aecf5528d23d66e72c3ca59e743adcba087ecfe301090fe3bff1c7',
     items: [
       { name: 'COQUETEL DE FRUTAS SEM ÁLCOOL', price: 'R$ 18,77' },
       { name: 'CAIPIRINHA', price: 'R$ 15,77', description: 'Velho barreiro, limão, gelo e açúcar.' },
@@ -249,7 +249,7 @@ const menuData: MenuCategory[] = [
     id: 'vinhos',
     title: 'Vinhos',
     icon: <Wine size={18} />,
-    image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=800&auto=format&fit=crop',
+    image: 'https://cdn.dooca.store/1390/products/c7brcxede6st35n8forpayrybxuf1po2dhax.png?v=1635368706&webp=0',
     items: [
       { name: 'CASA PERINI BARBERA', price: 'R$ 107,77' },
       { name: 'CASA PERINI ARTE MARSELAN', price: 'R$ 107,77' },
@@ -268,7 +268,7 @@ const menuData: MenuCategory[] = [
     id: 'destilados',
     title: 'Destilados',
     icon: <span className="text-lg">🥃</span>,
-    image: '../assets/destilados.jpg',
+    image: 'https://bartenderstore.com.br/wp-content/uploads/2024/10/whiskey-with-ice-in-glasses-2023-11-27-05-37-20-utc.jpg',
     items: [
       { name: 'OLD PAR (Whisky)', price: 'R$ 20,77' },
       { name: 'JACK DANIELS (Whisky)', price: 'R$ 20,77' },
@@ -844,7 +844,6 @@ export const FullMenu: React.FC = () => {
               'border-slate-800 text-slate-500'}`}>
             <p className="mb-2">* Imagens meramente ilustrativas.</p>
             <p>Se beber, não dirija. Venda proibida para menores de 18 anos.</p>
-            <p className="mt-4 italic">Cobramos taxa de serviço de 10% (opcional).</p>
         </div>
 
       </div>
