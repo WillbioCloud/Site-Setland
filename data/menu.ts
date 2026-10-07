@@ -1,0 +1,623 @@
+import {
+  Beer,
+  Beef,
+  CookingPot,
+  Drumstick,
+  Fish,
+  GlassWater,
+  Ham,
+  IceCream,
+  Martini,
+  Pizza,
+  Sandwich,
+  Smile,
+  Utensils,
+  Wheat,
+  Wine,
+  type LucideIcon,
+} from 'lucide-react';
+
+export interface MenuItem {
+  name: string;
+  price: string;
+  description?: string;
+  subCategory?: string;
+}
+
+export type MenuCategoryId =
+  | 'couvert'
+  | 'entradas'
+  | 'kids'
+  | 'hamburguer'
+  | 'pratos'
+  | 'panelinhas'
+  | 'executivos'
+  | 'carnes'
+  | 'suinos'
+  | 'bovinos'
+  | 'aves'
+  | 'frutos-mar'
+  | 'pizzas'
+  | 'pizzas-doces'
+  | 'sobremesas'
+  | 'drinks'
+  | 'espumantes'
+  | 'vinhos'
+  | 'destilados'
+  | 'bebidas'
+  | 'cervejas';
+
+export interface MenuCategory {
+  id: MenuCategoryId;
+  title: string;
+  icon: LucideIcon;
+  items: MenuItem[];
+}
+
+// Conteúdo e valores preservados do cardápio original do projeto.
+export const menuData: MenuCategory[] = [
+  {
+    id: 'couvert',
+    title: 'Couvert',
+    icon: Wheat,
+    items: [
+      {
+        name: 'PÃO ÁZIMO',
+        price: 'R$ 7,77',
+        description: 'Com manteiga de erva e caponata de berinjela.',
+      },
+    ],
+  },
+  {
+    id: 'entradas',
+    title: 'Entradas',
+    icon: Utensils,
+    items: [
+      { name: 'FRITAS SIMPLES', price: 'R$ 22,77' },
+      { name: 'FRITAS COM QUEIJO MUÇARELA', price: 'R$ 27,77' },
+      { name: 'FRITAS ESPECIAIS', price: 'R$ 37,77', description: 'Com bacon e creme de cheddar.' },
+      { name: 'PASTÉIS (6 UNIDADES)', price: 'R$ 37,77', description: 'Carne e queijo.' },
+      {
+        name: 'QUIBE DE CUPIM (6 UNIDADES)',
+        price: 'R$ 47,77',
+        description: 'Recheado com queijo.',
+      },
+      { name: 'SALAMINHO', price: 'R$ 47,77', description: 'Com palmito e tomate.' },
+      {
+        name: 'SALADA CAESAR',
+        price: 'R$ 47,77',
+        description:
+          'Alface americana, croutons, filé de frango, parmesão ralado e molho especial.',
+      },
+      {
+        name: 'QUEIJO COALHO GRELHADO (300g)',
+        price: 'R$ 57,77',
+        description: 'Com mel de abelha.',
+      },
+      { name: 'DADINHO DE QUEIJO EMPANADO (300g)', price: 'R$ 57,77' },
+      {
+        name: 'SALADA NA CESTA',
+        price: 'R$ 57,77',
+        description:
+          'Cestinha de queijo parmesão, alface americana, filé mignon grelhado, palmito, tomate e queijo coalho grelhado.',
+      },
+      { name: 'CUBOS DE FILÉ DE TILÁPIA EMPANADO (400g)', price: 'R$ 67,77' },
+      {
+        name: 'CEVICHE DE TILÁPIA',
+        price: 'R$ 67,77',
+        description:
+          'Pimenta dedo de moça, suco de limão, pimenta do reino, salsa, cebola roxa e azeite.',
+      },
+      {
+        name: 'TÁBUA DO MAR',
+        price: 'R$ 137,77',
+        description:
+          'Filé de tilápia grelhada, camarões, brócolis, tomate cereja, alcaparras, azeitona verde.',
+      },
+    ],
+  },
+  {
+    id: 'kids',
+    title: 'Menu Kids',
+    icon: Smile,
+    items: [
+      { name: 'ESPAGUETE', price: 'R$ 24,77', description: 'Ao molho bolonhesa e queijo.' },
+      {
+        name: 'PEITO DE FRANGO',
+        price: 'R$ 27,77',
+        description: 'Tiras grelhadas com arroz e fritas.',
+      },
+      {
+        name: 'FILÉ MIGNON',
+        price: 'R$ 37,77',
+        description: 'Tiras grelhadas com arroz e fritas.',
+      },
+    ],
+  },
+  {
+    id: 'hamburguer',
+    title: 'Hambúrgueres',
+    icon: Sandwich,
+    items: [
+      {
+        name: 'BIG BURGUER DE FRANGO',
+        price: 'R$ 27,77',
+        description:
+          'Tirinhas de filé de frango, peito de peru, presunto, tomate, muçarela e batata frita.',
+      },
+      {
+        name: 'X-BURGUER',
+        price: 'R$ 27,77',
+        description:
+          'Hambúrguer, cebola caramelizada, picles, 100g de queijo coalho grelhado e batata frita.',
+      },
+      {
+        name: 'X-PICANHA',
+        price: 'R$ 37,77',
+        description:
+          'Hambúrguer de picanha, bacon, presunto, muçarela, alface, tomate e batata frita.',
+      },
+    ],
+  },
+  {
+    id: 'pratos',
+    title: 'Individuais',
+    icon: Utensils,
+    items: [
+      {
+        name: 'FILÉ DE FRANGO À PARMEGIANA',
+        price: 'R$ 47,77',
+        description: 'Filé empanado, arroz branco e legumes na manteiga.',
+      },
+      {
+        name: 'FILÉ DE TILÁPIA REAL',
+        price: 'R$ 57,77',
+        description: 'Filé de tilápia, arroz branco e legumes na manteiga.',
+      },
+      {
+        name: 'FILÉ MIGNON À PARMEGIANA',
+        price: 'R$ 57,77',
+        description: 'Filé mignon empanado, arroz branco e legumes na manteiga.',
+      },
+      {
+        name: 'PICANHA NA CHAPA',
+        price: 'R$ 67,77',
+        description: 'Picanha grill, pão de alho, arroz branco e feijão tropeiro.',
+      },
+    ],
+  },
+  {
+    id: 'panelinhas',
+    title: 'Panelinhas',
+    icon: CookingPot,
+    items: [
+      {
+        name: 'PANELINHA GOIANA SETLAND',
+        price: 'R$ 77,77',
+        description:
+          'Arroz filé de frango, linguiça suína, guariroba, pequi, pimenta de cheiro, tomate, muçarela e banana frita. (Serve duas pessoas.)',
+      },
+      {
+        name: 'PANELINHA MISTA',
+        price: 'R$ 77,77',
+        description:
+          'Tiras de filé mignon, tiras de frango, cebola, tomate, muçarela, queijo parmesão e cheiro verde. (Serve duas pessoas.)',
+      },
+      {
+        name: 'PANELINHA DE CAMARÃO',
+        price: 'R$ 157,77',
+        description:
+          'Arroz, camarão, presunto em cubos, ervilha fresca, pimentão vermelho, pimentão amarelo, molho especial, muçarela e batata palha. (Serve duas pessoas.)',
+      },
+    ],
+  },
+  {
+    id: 'executivos',
+    title: 'Executivos',
+    icon: Utensils,
+    items: [
+      {
+        name: 'BISTECA SUÍNA',
+        price: 'R$ 47,77',
+        description: 'Arroz, feijão tropeiro, salada e fritas.',
+      },
+      {
+        name: 'FRANGO GRELHADO',
+        price: 'R$ 47,77',
+        description: 'Arroz, feijão tropeiro, salada e fritas.',
+      },
+      {
+        name: 'FILÉ DE TILÁPIA',
+        price: 'R$ 57,77',
+        description: 'Arroz, feijão tropeiro, salada e fritas.',
+      },
+      {
+        name: 'CONTRA FILÉ',
+        price: 'R$ 57,77',
+        description: 'Arroz, feijão tropeiro, salada e fritas.',
+      },
+    ],
+  },
+  {
+    id: 'carnes',
+    title: 'Carnes Nobres',
+    icon: Beef,
+    items: [
+      {
+        name: 'BIFE ANCHO ANGUS',
+        price: 'R$ 147,77',
+        description:
+          'Legumes assados, abóbora, batata, banana da terra, batata doce e risoto de tomate seco.',
+      },
+      {
+        name: 'BOMBOM DE ALCATRA',
+        price: 'R$ 147,77',
+        description:
+          'Arroz branco, feijão tropeiro, pão de alho, banana grelhada, mandioca na manteiga e vinagrete.',
+      },
+      {
+        name: 'T-BONE',
+        price: 'R$ 147,77',
+        description:
+          'Arroz de alho, farofa de maracujá, legumes assados, abóbora, batata, banana da terra, batata doce e vinagrete.',
+      },
+    ],
+  },
+  {
+    id: 'suinos',
+    title: 'Suínos',
+    icon: Ham,
+    items: [
+      {
+        name: 'LEITÃO ASSADO COM ERVAS',
+        price: 'R$ 127,77',
+        description:
+          'Arroz branco, mandioca frita, legumes assados, abóbora, batata, banana da terra, batata doce, farofa brasil e vinagrete.',
+      },
+      {
+        name: 'COSTELINHA SUÍNA',
+        price: 'R$ 127,77',
+        description: 'Arroz branco, batata frita, farofa brasil, vinagrete e molho barbecue.',
+      },
+      {
+        name: 'PICANHA SUÍNA GRILL',
+        price: 'R$ 137,77',
+        description: 'Arroz biro biro, pão de alho, feijão tropeiro, banana grelhada e vinagrete.',
+      },
+    ],
+  },
+  {
+    id: 'bovinos',
+    title: 'Bovinos (2P)',
+    icon: Beef,
+    items: [
+      {
+        name: 'FILÉ MIGNON',
+        price: 'R$ 147,77',
+        description:
+          'Arroz de alho, farofa de maracujá, legumes assados, abóbora, batata, banana da terra, batata doce e vinagrete.',
+      },
+      {
+        name: 'PICANHA NA CHAPA',
+        price: 'R$ 167,77',
+        description:
+          'Arroz branco, feijão tropeiro, pão de alho, banana grelhada, mandioca na manteiga e vinagrete.',
+      },
+      {
+        name: 'FILÉ 3 PIMENTAS',
+        price: 'R$ 147,77',
+        description:
+          'Molho demi glacê com: Pimenta do reino, pimenta rosa e pimenta malagueta, arroz a grega e batata frita.',
+      },
+      {
+        name: 'FILÉ MEDALHÃO SETLAND',
+        price: 'R$ 147,77',
+        description: 'Arroz piamontese, batatas rústicas, molho madeira e champignon.',
+      },
+      {
+        name: 'PARMEGIANA DE FILÉ MIGNON',
+        price: 'R$ 137,77',
+        description: 'Arroz branco e batata frita.',
+      },
+    ],
+  },
+  {
+    id: 'aves',
+    title: 'Aves (2P)',
+    icon: Drumstick,
+    items: [
+      {
+        name: 'PARMEGIANA DE FILÉ DE FRANGO',
+        price: 'R$ 97,77',
+        description: 'Arroz branco e batata frita.',
+      },
+      {
+        name: 'FILÉ DE FRANGO COM MOLHO BECHAMEL',
+        price: 'R$ 97,77',
+        description:
+          'Filé a milanesa, molho branco gratinado com queijo, arroz de brócolis e batata frita.',
+      },
+    ],
+  },
+  {
+    id: 'frutos-mar',
+    title: 'Frutos do Mar',
+    icon: Fish,
+    items: [
+      {
+        name: 'SALMÃO AO MOLHO DE ALCAPARRAS',
+        price: 'R$ 157,77',
+        description:
+          'Arroz de castanha, batata rústica, molho de alcaparras com champignon e salada.',
+      },
+      {
+        name: 'SALMÃO AO MOLHO DE MARACUJÁ',
+        price: 'R$ 157,77',
+        description: 'Arroz cremoso, molho de maracujá, batata rústica e salada.',
+      },
+      {
+        name: 'SALMÃO AO MOLHO PESTO',
+        price: 'R$ 157,77',
+        description: 'Arroz cremoso, molho pesto, batata rústica e salada.',
+      },
+      {
+        name: 'FILÉ DE TILÁPIA A BELLE MEUNIERE',
+        price: 'R$ 147,77',
+        description:
+          'Filé grelhado com molho de camarão, alcaparras, champignon, batata rústica e arroz branco.',
+      },
+      {
+        name: 'PAELLA',
+        price: 'R$ 167,77',
+        description:
+          'Arroz, pintado, camarão, lula, polvo, lombo suíno, peito de frango, ervilha fresca e molho especial.',
+      },
+    ],
+  },
+  {
+    id: 'pizzas',
+    title: 'Pizzas Medievais',
+    icon: Pizza,
+    items: [
+      {
+        name: 'SETLAND',
+        price: 'R$ 77,77',
+        description:
+          'Cordeiro assado ao molho de vinho, muçarela e molho pesto. (MÉDIA). GRANDE: R$ 87,77.',
+      },
+      {
+        name: 'ARIEL',
+        price: 'R$ 117,77',
+        description:
+          'Camarão, champignon, palmito, alho poró, requeijão cremoso, muçarela e tomate seco. (MÉDIA). GRANDE: R$ 137,77.',
+      },
+      {
+        name: 'DOROTHY',
+        price: 'R$ 67,77',
+        description:
+          'Carne seca desfiada, pimentão, muçarela, requeijão, tomate, cebola e azeitona. (MÉDIA). GRANDE: R$ 77,77.',
+      },
+      {
+        name: 'PIRATA',
+        price: 'R$ 67,77',
+        description:
+          'Lombo canadense, muçarela, azeitona preta, queijo prato, e tomate cereja. (MÉDIA). GRANDE: R$ 77,77.',
+      },
+      {
+        name: 'CARRASCO',
+        price: 'R$ 67,77',
+        description: 'Frango, guariroba, pequi, jiló, milho e pimentas. (MÉDIA). GRANDE: R$ 77,77.',
+      },
+      {
+        name: 'CHAPELEIRO MALUCO',
+        price: 'R$ 67,77',
+        description:
+          'Presunto, frango desfiado, ervilha, tomate, palmito, azeitona, muçarela e bacon. (MÉDIA). GRANDE: R$ 77,77.',
+      },
+      {
+        name: 'VALENTE',
+        price: 'R$ 57,77',
+        description: 'Muçarela, calabresa, cebola e azeitona. (MÉDIA). GRANDE: R$ 67,77.',
+      },
+      {
+        name: 'ZORRO',
+        price: 'R$ 57,77',
+        description:
+          'Presunto, ovo, cebola, pimentão, azeitona, muçarela e tomate seco. (MÉDIA). GRANDE: R$ 67,77.',
+      },
+      {
+        name: 'SETINHO',
+        price: 'R$ 57,77',
+        description:
+          'Frango desfiado, requeijão cremoso, palmito e muçarela. (MÉDIA). GRANDE: R$ 67,77.',
+      },
+      {
+        name: 'OLAF',
+        price: 'R$ 57,77',
+        description:
+          'Queijo muçarela, queijo prato, requeijão cremoso e gorgonzola. (MÉDIA). GRANDE: R$ 67,77.',
+      },
+    ],
+  },
+  {
+    id: 'pizzas-doces',
+    title: 'Pizzas Mágicas',
+    icon: Pizza,
+    items: [
+      {
+        name: 'REI E RAINHA',
+        price: 'R$ 67,77',
+        description: 'Muçarela, chocolate, castanha de caju e cereja. (MÉDIA). GRANDE: R$ 77,77.',
+      },
+      {
+        name: 'BRANCA DE NEVE',
+        price: 'R$ 57,77',
+        description: 'Muçarela, doce de leite, banana e paçoca. (MÉDIA). GRANDE: R$ 67,77.',
+      },
+      {
+        name: 'A BELA E A FERA',
+        price: 'R$ 57,77',
+        description: 'Muçarela, goiabada cremosa e creme de leite. (MÉDIA). GRANDE: R$ 67,77.',
+      },
+    ],
+  },
+  {
+    id: 'sobremesas',
+    title: 'Sobremesas',
+    icon: IceCream,
+    items: [
+      {
+        name: 'TAÇA DE SORVETE',
+        price: 'R$ 17,77',
+        description: 'Sabores: chocolate, creme e morango.',
+      },
+      { name: 'PETIT GATEAU', price: 'R$ 27,77', description: 'Servido com sorvete de creme.' },
+      { name: 'COCADA DE FORNO', price: 'R$ 27,77', description: 'Servido com sorvete de creme.' },
+    ],
+  },
+  {
+    id: 'drinks',
+    title: 'Drinks',
+    icon: Martini,
+    items: [
+      { name: 'COQUETEL DE FRUTAS SEM ÁLCOOL', price: 'R$ 18,77' },
+      {
+        name: 'CAIPIRINHA',
+        price: 'R$ 15,77',
+        description: 'Velho barreiro, limão, gelo e açúcar.',
+      },
+      {
+        name: 'MEIA DE SEDA',
+        price: 'R$ 22,77',
+        description: 'Creme de leite, vodka e licor de cacau.',
+      },
+      {
+        name: 'ALEXANDER',
+        price: 'R$ 22,77',
+        description: 'Conhaque, licor de chocolate, creme de leite e canela em pó.',
+      },
+      {
+        name: 'PINA COLADA',
+        price: 'R$ 22,77',
+        description: 'Bacardi branco, abacaxi, leite de coco, leite condensado e canela em pó.',
+      },
+      {
+        name: 'CAIPIROSKA (Smirnoff)',
+        price: 'R$ 22,77',
+        description: 'Smirnoff, limão, gelo e açúcar.',
+      },
+      { name: 'CAIPIRÍSSIMA', price: 'R$ 22,77', description: 'Bacardi, limão, gelo e açúcar.' },
+      {
+        name: 'CAIPIROSKA DE FRUTAS TROPICAIS (Smirnoff)',
+        price: 'R$ 23,77',
+        description: 'Smirnoff, frutas tropicais, gelo e açúcar.',
+      },
+      { name: 'DRY MARTINI', price: 'R$ 23,77', description: 'Gin, vermute, azeitona e gelo.' },
+      {
+        name: 'CAIPIRINHA DE SHAKE',
+        price: 'R$ 24,77',
+        description: 'Shake gerkeikan, limão, gelo e açúcar.',
+      },
+      {
+        name: 'CAIPIROSKA (Stolichnaya)',
+        price: 'R$ 25,77',
+        description: 'Stolichnaya, limão, gelo e açúcar.',
+      },
+      {
+        name: 'CAIPIROSKA DE FRUTAS TROPICAIS (Stolichnaya)',
+        price: 'R$ 27,77',
+        description: 'Stolichnaya, frutas tropicais, gelo e açúcar.',
+      },
+    ],
+  },
+  {
+    id: 'espumantes',
+    title: 'Espumantes',
+    icon: Wine,
+    items: [
+      { name: 'BRUT CASA PERINI', price: 'R$ 77,77' },
+      { name: 'PROSECCO CASA PERINI', price: 'R$ 87,77' },
+      { name: 'MOSCATEL CASA PERINI', price: 'R$ 87,77' },
+      { name: 'ROSÉ BRUT CASA PERINI', price: 'R$ 77,77' },
+      { name: 'AQUARELA MOSCATEL CASA PERINI', price: 'R$ 77,77' },
+    ],
+  },
+  {
+    id: 'vinhos',
+    title: 'Vinhos',
+    icon: Wine,
+    items: [
+      { name: 'CASA PERINI BARBERA', price: 'R$ 107,77' },
+      { name: 'CASA PERINI ARTE MARSELAN', price: 'R$ 107,77' },
+      { name: 'CASA PERINI TERROIS MALBEC', price: 'R$ 107,77' },
+      { name: 'CASA PERINI FRAÇÃO ÚNICA PINOT', price: 'R$ 107,77' },
+      { name: 'CASA PERINI FRAÇÃO ÚNICA CABERNET MERLOT', price: 'R$ 107,77' },
+      { name: 'CASA PERINI FRAÇÃO ÚNICA CABERNET SAUVIGNON', price: 'R$ 107,77' },
+      { name: 'CASA PERINI FRAÇÃO ÚNICA CHARDONNAY (BRANCO)', price: 'R$ 107,77' },
+      { name: 'CASA PERINI ROSÉ SOLIDÁRIO (ROSADO)', price: 'R$ 107,77' },
+      { name: 'TAÇA TINTO SUAVE', price: 'R$ 17,77' },
+      { name: 'TAÇA BRANCO SECO', price: 'R$ 17,77' },
+      { name: 'TAÇA CABERNET SAUVIGNON', price: 'R$ 20,77' },
+    ],
+  },
+  {
+    id: 'destilados',
+    title: 'Destilados',
+    icon: GlassWater,
+    items: [
+      { name: 'OLD PAR (Whisky)', price: 'R$ 20,77' },
+      { name: 'JACK DANIELS (Whisky)', price: 'R$ 20,77' },
+      { name: 'JHONNY WALKER RED (Whisky)', price: 'R$ 17,77' },
+      { name: 'JHONNY WALKER BLACK (Whisky)', price: 'R$ 20,32' },
+      { name: 'SMIRNOFF (Vodka)', price: 'R$ 12,77' },
+      { name: 'STOLICHNAYA RUSSA (Vodka)', price: 'R$ 16,77' },
+      { name: 'SEAGERS (Gin)', price: 'R$ 12,77' },
+      { name: 'TANQUERAY (Gin)', price: 'R$ 16,77' },
+      { name: 'SHAKE GERKKEIKAN', price: 'R$ 14,77' },
+      { name: 'BACARDI CARTA BRANCA', price: 'R$ 12,77' },
+      { name: 'MARTINI BIANCO', price: 'R$ 12,77' },
+      { name: 'MARTINI EXTRA DRY', price: 'R$ 12,77' },
+      { name: 'SCHLICHTE (STEINHAGER)', price: 'R$ 17,77' },
+      { name: 'SALINAS (CACHAÇA)', price: 'R$ 12,77' },
+      { name: 'VELHO BARREIRO (CACHAÇA)', price: 'R$ 7,77' },
+      { name: 'LICOR 43', price: 'R$ 19,77' },
+      { name: 'LICOR BAILEYS', price: 'R$ 16,77' },
+      { name: 'LICOR COINTREAU', price: 'R$ 16,77' },
+    ],
+  },
+  {
+    id: 'bebidas',
+    title: 'Bebidas e Sucos',
+    icon: GlassWater,
+    items: [
+      { name: 'ÁGUA SEM GÁS', price: 'R$ 3,77' },
+      { name: 'ÁGUA COM GÁS', price: 'R$ 4,77' },
+      { name: 'H2OH', price: 'R$ 7,77' },
+      { name: 'COCA COLA KS', price: 'R$ 5,77' },
+      { name: 'REFRIGERANTE EM LATA', price: 'R$ 6,77' },
+      {
+        name: 'SUCO NATURAL 400ML',
+        price: 'R$ 10,77',
+        description: 'Laranja, Abacaxi, Morango e Limão.',
+      },
+      {
+        name: 'SUCO DE POLPA 400ML',
+        price: 'R$ 9,77',
+        description: 'Acerola, Caju, Goiaba, Cajá, Maracujá, Graviola e Abacaxi.',
+      },
+      { name: 'SUCO DE UVA TINTO (CASA PERINI 300ML)', price: 'R$ 12,77' },
+      { name: 'SUCO DE UVA BRANCO (CASA PERINI 300ML)', price: 'R$ 12,77' },
+    ],
+  },
+  {
+    id: 'cervejas',
+    title: 'Cervejas',
+    icon: Beer,
+    items: [
+      { name: 'BRAHMA DUPLO MALTE (600ml)', price: 'R$ 14,77' },
+      { name: 'HEINEKEN (600ml)', price: 'R$ 18,77' },
+      { name: 'HEINEKEN (Long Neck)', price: 'R$ 10,77' },
+      { name: 'PETRA (Long Neck)', price: 'R$ 10,77' },
+    ],
+  },
+];

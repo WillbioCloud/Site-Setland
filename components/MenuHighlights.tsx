@@ -1,72 +1,94 @@
-import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, UtensilsCrossed } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getMenuItemAnchor } from '../data/menuDisplay';
+import mignon from '../assets/mignon-parmegiana.webp';
+import entradas from '../assets/optimized/entradas.webp';
 
 const highlights = [
-  { 
-    id: '1', 
-    name: 'Picanha na Chapa', 
-    description: 'Picanha grill, pão de alho, arroz branco e feijão tropeiro.', 
-    price: 'R$ 67,77', 
-    imageUrl: 'https://images.unsplash.com/photo-1594041680534-e8c8cdebd659?q=80&w=600'
+  {
+    name: 'Mignon à parmegiana',
+    detail: 'Uma pausa à altura da aventura',
+    price: 'R$ 57,77',
+    category: 'pratos',
+    itemName: 'FILÉ MIGNON À PARMEGIANA',
   },
-  { 
-    id: '2', 
-    name: 'Filé Mignon Kids', 
-    description: 'Tiras grelhadas macias com arroz soltinho e batatas fritas.', 
-    price: 'R$ 37,77', 
-    imageUrl: 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?q=80&w=600'
+  {
+    name: 'Panelinha goiana Setland',
+    detail: 'Sabores da nossa terra, para dois',
+    price: 'R$ 77,77',
+    category: 'panelinhas',
+    itemName: 'PANELINHA GOIANA SETLAND',
   },
-  { 
-    id: '3', 
-    name: 'Mignon à Parmegiana', 
-    description: 'Filé mignon empanado crocante, arroz branco e legumes na manteiga.', 
-    price: 'R$ 57,77', 
-    imageUrl: '../assets/mignon-parmegiana.jpg'
+  {
+    name: 'Pizza Setland',
+    detail: 'Cordeiro, muçarela e pesto · média',
+    price: 'R$ 77,77',
+    category: 'pizzas',
+    itemName: 'SETLAND',
   },
-  { 
-    id: '4', 
-    name: 'Suco Natural', 
-    description: 'Laranja, Abacaxi, Morango ou Limão. 400ml de puro frescor.', 
-    price: 'R$ 10,77', 
-    imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=600' 
-  },
-];
+] as const;
 
-export const MenuHighlights: React.FC = () => {
+export function MenuHighlights() {
   return (
-    <section id="menu" className="py-20 bg-slate-950">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-           <h2 className="text-4xl font-display font-black text-white mb-6">
-             Destaques da <span className="text-accent">Cozinha</span>
-           </h2>
-           <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
-             Sabores épicos para repor suas energias entre uma era e outra.
-           </p>
+    <section id="menu" className="section gastronomy-section">
+      <div className="container gastronomy-grid">
+        <div className="gastronomy-visual">
+          <div className="gastronomy-visual__main">
+            <img
+              src={mignon}
+              alt="Filé mignon à parmegiana do cardápio Setland"
+              loading="lazy"
+              width="770"
+              height="514"
+            />
+            <div className="gastronomy-visual__caption">
+              <UtensilsCrossed size={19} strokeWidth={1.4} aria-hidden="true" />
+              <span>À mesa, novas histórias.</span>
+            </div>
+          </div>
+          <img
+            className="gastronomy-visual__inset"
+            src={entradas}
+            alt="Pão e acompanhamentos do couvert"
+            width="240"
+            height="240"
+            loading="lazy"
+          />
+          <span className="gastronomy-visual__index">UMA EXPERIÊNCIA PARA TODOS OS SENTIDOS</span>
         </div>
-             
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-           {highlights.map((item) => (
-             <div key={item.id} className="flex gap-4 items-center bg-slate-900 p-4 rounded-2xl border border-slate-800 hover:border-accent transition-colors group">
-                <img src={item.imageUrl} alt={item.name} className="w-24 h-24 rounded-xl object-cover shadow-lg group-hover:scale-105 transition-transform" />
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-1">
-                    <h4 className="font-bold text-white text-lg">{item.name}</h4>
-                    <span className="text-accent font-bold bg-accent/10 px-2 py-1 rounded text-sm">{item.price}</span>
-                  </div>
-                  <p className="text-sm text-slate-500 mb-2">{item.description}</p>
+        <div className="gastronomy-copy">
+          <span className="eyebrow">
+            <span className="eyebrow-line" /> Gastronomia Setland
+          </span>
+          <h2>
+            A aventura
+            <br />
+            também <span className="text-gold">tem sabor.</span>
+          </h2>
+          <p>
+            Entre uma descoberta e outra, sente-se à mesa. Sabores para compartilhar, brindar e
+            transformar uma pausa em mais uma boa lembrança.
+          </p>
+          <div className="menu-highlights">
+            {highlights.map((item) => (
+              <Link
+                className="menu-highlight"
+                to={`/cardapio#${getMenuItemAnchor(item.category, item.itemName)}`}
+                key={item.name}
+              >
+                <div>
+                  <h3>{item.name}</h3>
+                  <span>{item.detail}</span>
                 </div>
-             </div>
-           ))}
-        </div>
-
-        <div className="text-center mt-12">
-            <Link to="/cardapio" className="inline-flex items-center gap-2 text-white font-bold hover:text-accent transition-colors group text-lg">
-                Ver Cardápio Completo <ArrowRight size={20} className="transform group-hover:translate-x-2 transition-transform" />
-            </Link>
+                <strong>{item.price}</strong>
+              </Link>
+            ))}
+          </div>
+          <Link to="/cardapio" className="button button--outline">
+            Explore o cardápio <ArrowRight size={17} aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </section>
   );
-};
+}
