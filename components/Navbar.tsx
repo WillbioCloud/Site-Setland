@@ -1,142 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X, Facebook, Instagram } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, MapPin, Menu, Ticket } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Brand } from './Brand';
 import { Button } from './Button';
-import { useTheme } from '../context/ThemeContext';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Modal } from './Modal';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
-// Importação das Logos
-import logoDefault from '../assets/logo-setland.png';
-import logoMedieval from '../assets/logo-medieval.png';
-import logoGlacial from '../assets/logo-glacial.png';
-import logoFuturistic from '../assets/logo-futuristica.png';
+const links = [
+  { to: '/#hero', label: 'O parque', section: 'hero' },
+  { to: '/#eras', label: 'As 3 eras', section: 'eras' },
+  { to: '/#atracoes', label: 'Atrações', section: 'atracoes' },
+  { to: '/cardapio', label: 'Gastronomia', section: 'menu' },
+  { to: '/#visita', label: 'Planeje sua visita', section: 'visita' },
+];
 
-interface NavbarProps {
-  onOpenTickets: () => void;
-}
-
-export const Navbar: React.FC<NavbarProps> = ({ onOpenTickets }) => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { currentTheme, setTheme } = useTheme();
-  
+export function Navbar({ onOpenTickets }: { onOpenTickets: () => void }) {
   const location = useLocation();
-  const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [section, setSection] = useState('hero');
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const handleNavigation = (target: string) => {
-    setMobileMenuOpen(false);
+  useEffect(() => {
+    setMobileOpen(false);
+    if (location.pathname !== '/') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) if (entry.isIntersecting) setSection(entry.target.id);
+      },
+      { rootMargin: '-15% 0px -70% 0px' },
+    );
+    document.querySelectorAll('main section[id]').forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [location.pathname]);
 
-    if (target.startsWith('#')) {
-      if (location.pathname === '/') {
-        if (target === '#hero') setTheme('default');
-        const element = document.querySelector(target);
-        element?.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        setTheme('default');
-        navigate('/');
-        setTimeout(() => {
-          const element = document.querySelector(target);
-          element?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
-    } else {
-      navigate(target);
-      window.scrollTo(0, 0);
-    }
-  };
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1100px)');
+    const onChange = () => {
+      if (media.matches) setMobileOpen(false);
+    };
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
 
-  // Define qual logo usar baseada no tema
-  const getLogo = () => {
-    switch (currentTheme) {
-      case 'medieval': return logoMedieval;
-      case 'glacial': return logoGlacial;
-      case 'futuristic': return logoFuturistic;
-      default: return logoDefault;
-    }
-  };
-
-  // Dynamic Styles Background
-  const bgClass = isScrolled 
-    ? (currentTheme === 'glacial' ? 'bg-glacial-base/90 border-b border-glacial-accent/20' : 
-       currentTheme === 'medieval' ? 'bg-medieval-base/95 border-b border-medieval-accent/20' : 
-       currentTheme === 'futuristic' ? 'bg-black/90 border-b border-future-neon/50 shadow-[0_0_10px_rgba(217,70,239,0.2)]' : 
-       'bg-slate-900/95') 
-    : 'bg-transparent';
+  const active = (id: string) =>
+    location.pathname === '/cardapio' ? id === 'menu' : location.pathname === '/' && section === id;
 
   return (
-    <header 
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 backdrop-blur-sm ${bgClass} ${isScrolled ? 'py-2 shadow-lg' : 'py-4'}`}
-    >
-      <div className="container mx-auto px-4 flex items-center justify-between">
-        
-        {/* LOGO DINÂMICA (IMAGEM) */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleNavigation('#hero')}>
-          <img 
-            src={getLogo()} 
-            alt="SetLand Logo" 
-            className={`transition-all duration-500 object-contain
-              ${isScrolled ? 'h-10 md:h-12' : 'h-12 md:h-16'}
-              ${currentTheme === 'glacial' ? 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : ''}
-              ${currentTheme === 'futuristic' ? 'drop-shadow-[0_0_8px_rgba(217,70,239,0.8)]' : ''}
-            `}
-          />
-        </div>
-
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
-          <button onClick={() => handleNavigation('#hero')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">O Parque</button>
-          <button onClick={() => handleNavigation('#eras')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">3 Eras</button>
-          <button onClick={() => handleNavigation('#atracoes')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">Atrações</button>
-          <button onClick={() => handleNavigation('/cardapio')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">Cardápio</button>
-          <button onClick={() => handleNavigation('#contato')} className="text-sm font-bold text-white hover:text-accent transition-colors uppercase tracking-wide drop-shadow-sm">Contato</button>
-        </nav>
-
-        {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className={`flex gap-2 ${currentTheme === 'medieval' ? 'text-medieval-paper' : 'text-white'}`}>
-             <a href="https://www.instagram.com/7setland/" className="hover:text-accent transition-colors drop-shadow-sm"><Instagram size={20} /></a>
-             <a href="#" className="hover:text-accent transition-colors drop-shadow-sm"><Facebook size={20} /></a>
+    <>
+      <header
+        className={`site-header ${scrolled || location.pathname !== '/' ? 'is-scrolled' : ''}`}
+      >
+        <div className="container header-inner">
+          <Brand />
+          <nav className="desktop-nav" aria-label="Navegação principal">
+            {links.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`nav-link ${active(link.section) ? 'is-active' : ''}`}
+                aria-current={active(link.section) ? 'location' : undefined}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="header-actions">
+            <ThemeSwitcher />
+            <Button size="sm" onClick={onOpenTickets} className="header-ticket">
+              <Ticket size={16} aria-hidden="true" /> Ingressos{' '}
+              <ArrowUpRight size={15} aria-hidden="true" />
+            </Button>
+            <button
+              className="icon-button mobile-nav-toggle"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Abrir menu de navegação"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-navigation"
+            >
+              <Menu size={23} aria-hidden="true" />
+            </button>
           </div>
-          <Button size="sm" onClick={onOpenTickets}>
-            {currentTheme === 'futuristic' ? 'GET_ACCESS' : 'Ingressos'}
-          </Button>
         </div>
-
-        {/* Mobile Toggle */}
-        <button 
-          className="md:hidden text-white drop-shadow-md"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+      </header>
+      <Modal
+        isOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        titleId="mobile-menu-title"
+        className="mobile-menu"
+        closeLabel="Fechar menu de navegação"
+      >
+        <div className="mobile-menu__brand">
+          <Brand onClick={() => setMobileOpen(false)} />
+        </div>
+        <h2 id="mobile-menu-title" className="eyebrow">
+          Sua próxima descoberta
+        </h2>
+        <nav id="mobile-navigation" aria-label="Navegação mobile">
+          {links.map((link, index) => (
+            <Link
+              to={link.to}
+              key={link.to}
+              onClick={() => setMobileOpen(false)}
+              className={active(link.section) ? 'is-active' : ''}
+            >
+              <span>0{index + 1}</span>
+              {link.label}
+              <ArrowUpRight size={20} aria-hidden="true" />
+            </Link>
+          ))}
+        </nav>
+        <Button
+          fullWidth
+          onClick={() => {
+            setMobileOpen(false);
+            onOpenTickets();
+          }}
         >
-          {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className={`md:hidden absolute top-full left-0 w-full p-6 flex flex-col gap-4 shadow-xl animate-fade-in border-t border-slate-700
-          ${currentTheme === 'glacial' ? 'bg-glacial-base' : 
-            currentTheme === 'medieval' ? 'bg-medieval-base' : 
-            currentTheme === 'futuristic' ? 'bg-black' : 
-            'bg-slate-900'}
-        `}>
-          <button onClick={() => handleNavigation('#hero')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">O Parque</button>
-          <button onClick={() => handleNavigation('#eras')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">3 Eras</button>
-          <button onClick={() => handleNavigation('#atracoes')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">Atrações</button>
-          <button onClick={() => handleNavigation('/cardapio')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">Cardápio</button>
-          <button onClick={() => handleNavigation('#contato')} className="text-left text-lg font-semibold text-slate-100 hover:text-white py-2 border-b border-white/10">Contato</button>
-          
-          <Button fullWidth onClick={() => { setMobileMenuOpen(false); onOpenTickets(); }}>
-            Comprar Ingresso
-          </Button>
-        </div>
-      )}
-    </header>
+          <Ticket size={17} aria-hidden="true" /> Planejar minha aventura
+        </Button>
+        <p className="mobile-menu__location">
+          <MapPin size={15} aria-hidden="true" /> Caldas Novas, Goiás
+        </p>
+      </Modal>
+    </>
   );
-};
+}

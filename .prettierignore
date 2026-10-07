@@ -1,0 +1,9 @@
+node_modules/
+dist/
+assets/
+public/
+.artifacts/
+playwright-report/
+test-results/
+package-lock.json
+.npm-audit.json

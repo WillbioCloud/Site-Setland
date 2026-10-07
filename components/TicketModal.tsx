@@ -1,575 +1,554 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  X, Calendar, Users, CreditCard, CheckCircle, 
-  Ticket, Shield, Zap, Snowflake, ChevronRight, ArrowLeft,
-  Loader2
+import { useEffect, useRef, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  CalendarDays,
+  Castle,
+  Check,
+  CheckCircle2,
+  CreditCard,
+  Info,
+  LoaderCircle,
+  Minus,
+  Plus,
+  Ticket,
+  Wallet,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { Button } from '../components/Button';
+import { CASTLE_IMAGE, INSTAGRAM_URL } from '../data/park';
+import {
+  calculateTicketTotal,
+  formatCurrency,
+  localDateISO,
+  TICKET_PRICES,
+  validVisitDate,
+} from '../data/visit';
+import { cpfDigits, formatCPF, formatPhone, isValidCPF } from '../data/checkout';
+import { Button } from './Button';
+import { Modal } from './Modal';
 
-// --- IMPORTAÇÃO DAS IMAGENS ---
-import medievalBg from '../assets/castelo-bg.webp';
-// Glacial agora usa duas camadas, igual ao Hero
-import glacialCastle from '../assets/fundo-castelo.webp';
-import glacialOverlay from '../assets/blue-background.webp';
-import futureBg from '../assets/Robo.webp'; 
-
+export interface CheckoutData {
+  theme: string;
+  visitDate: string;
+  tickets: { adult: number; child: number; senior: number };
+  customer: { name: string; email: string; cpf: string; phone: string };
+  totalAmount: number;
+  paymentMethod: 'pix' | 'credit_card';
+}
 interface TicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCheckout?: (data: CheckoutData) => Promise<void>;
 }
+type TicketType = keyof typeof TICKET_PRICES;
+const ticketLabels: { id: TicketType; label: string; detail: string }[] = [
+  { id: 'adult', label: 'Adulto', detail: 'Entrada inteira' },
+  { id: 'child', label: 'Infantil', detail: 'De 6 a 12 anos' },
+  { id: 'senior', label: 'Sênior', detail: 'A partir de 60 anos' },
+];
+const emptyCustomer = { name: '', email: '', cpf: '', phone: '' };
 
-export interface CheckoutData {
-  theme: string;
-  visitDate: string;
-  tickets: {
-    adult: number;
-    child: number;
-    senior: number;
-  };
-  customer: {
-    name: string;
-    email: string;
-    cpf: string;
-    phone: string;
-  };
-  totalAmount: number;
-  paymentMethod: 'pix' | 'credit_card';
-}
-
-export const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, onCheckout }) => {
+export function TicketModal({ isOpen, onClose, onCheckout }: TicketModalProps) {
+  const { currentTheme } = useTheme();
   const [step, setStep] = useState(1);
   const [date, setDate] = useState('');
   const [tickets, setTickets] = useState({ adult: 1, child: 0, senior: 0 });
-  
-  const [customer, setCustomer] = useState({ name: '', email: '', cpf: '', phone: '' });
+  const [customer, setCustomer] = useState(emptyCustomer);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const { currentTheme } = useTheme();
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
+  const requestVersion = useRef(0);
+  const stepTitle = useRef<HTMLHeadingElement>(null);
+  const stepScroll = useRef<HTMLDivElement>(null);
+  const isDemo = !onCheckout;
+  const count = tickets.adult + tickets.child + tickets.senior;
+  const total = calculateTicketTotal(tickets);
+  const formattedDate =
+    date && !Number.isNaN(new Date(`${date}T12:00:00`).getTime())
+      ? new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'Escolha sua data';
 
   useEffect(() => {
-    if (isOpen) {
-      setStep(1);
-      setTickets({ adult: 1, child: 0, senior: 0 });
-      setDate('');
-      setIsProcessing(false);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    return () => { document.body.style.overflow = 'auto'; }
+    requestVersion.current++;
+    setStep(1);
+    setDate('');
+    setTickets({ adult: 1, child: 0, senior: 0 });
+    setCustomer(emptyCustomer);
+    setPaymentMethod('pix');
+    setProcessing(false);
+    setError('');
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (step > 1) stepTitle.current?.focus({ preventScroll: true });
+    stepScroll.current?.scrollTo({ top: 0, behavior: 'instant' });
+  }, [step]);
 
-  const PRICES = { adult: 89.90, child: 44.90, senior: 44.90 };
-  const total = (tickets.adult * PRICES.adult) + (tickets.child * PRICES.child) + (tickets.senior * PRICES.senior);
-
-  // Mapeamento de imagens para outros temas
-  const themeImages = {
-    medieval: medievalBg,
-    futuristic: futureBg,
-    glacial: glacialCastle, // Fallback
-    default: medievalBg
-  };
-  
-  const activeImage = themeImages[currentTheme as keyof typeof themeImages] || themeImages.default;
-
-  const getThemeContent = () => {
-    switch (currentTheme) {
-      case 'futuristic':
-        return {
-          bgOverlay: 'bg-black/90 backdrop-blur-xl',
-          modalBg: 'bg-black border-2 border-[#00f3ff] shadow-[0_0_50px_rgba(0,243,255,0.3)]',
-          text: 'text-white font-future',
-          accent: 'text-[#00f3ff]',
-          accentBg: 'bg-[#00f3ff]',
-          border: 'border-[#00f3ff]',
-          title: 'TERMINAL', 
-          subtitle: 'Selecione ciclo de visita.',
-          labels: { adult: 'HUMANO', child: 'MINI', senior: 'VETERANO' },
-          icon: <Zap size={24} className="text-[#00f3ff]" />,
-          buttonClass: 'bg-[#00f3ff] text-black hover:bg-white hover:text-black font-future uppercase tracking-widest clip-path-slant',
-          inputClass: 'bg-black border border-[#00f3ff] text-[#00f3ff] font-mono focus:shadow-[0_0_15px_#00f3ff]'
-        };
-      case 'medieval':
-        return {
-          bgOverlay: 'bg-black/80 backdrop-blur-sm',
-          modalBg: 'bg-[#f5e6d3] border-4 double border-[#5c4033] shadow-2xl parchment-texture',
-          text: 'text-[#4a3728] font-medieval',
-          accent: 'text-[#800000]',
-          accentBg: 'bg-[#800000]',
-          border: 'border-[#5c4033]',
-          title: 'Tesouro Real',
-          subtitle: 'Salvo-conduto.',
-          labels: { adult: 'Nobre', child: 'Escudeiro', senior: 'Sábio' },
-          icon: <Shield size={24} className="text-[#800000]" />,
-          buttonClass: 'bg-[#800000] text-[#f5e6d3] hover:bg-[#5c4033] font-medieval border-2 border-[#5c4033] shadow-lg',
-          inputClass: 'bg-[#eaddcf] border-b-2 border-[#5c4033] text-[#4a3728] font-serif focus:bg-[#dcc8b6]'
-        };
-      case 'glacial':
-        return {
-          bgOverlay: 'bg-[#0f172a]/80 backdrop-blur-md',
-          modalBg: 'bg-[#e0f7fa] border border-cyan-300 shadow-[0_0_40px_rgba(34,211,238,0.4)]',
-          text: 'text-cyan-900 font-display',
-          accent: 'text-cyan-600',
-          accentBg: 'bg-cyan-500',
-          border: 'border-cyan-300',
-          title: 'Expedição',
-          subtitle: 'Entrada no gelo.',
-          labels: { adult: 'Explorador', child: 'Pinguim', senior: 'Veterano' },
-          icon: <Snowflake size={24} className="text-cyan-500" />,
-          buttonClass: 'bg-cyan-500 text-white hover:bg-cyan-600 shadow-md rounded-xl',
-          inputClass: 'bg-white border border-cyan-200 text-cyan-900 focus:ring-2 focus:ring-cyan-400 rounded-lg'
-        };
-      default:
-        return {
-          bgOverlay: 'bg-slate-900/90 backdrop-blur-sm',
-          modalBg: 'bg-slate-800 border border-slate-700 shadow-2xl',
-          text: 'text-white font-sans',
-          accent: 'text-accent',
-          accentBg: 'bg-accent',
-          border: 'border-slate-600',
-          title: 'Bilheteria',
-          subtitle: 'Seus ingressos.',
-          labels: { adult: 'Adulto', child: 'Infantil', senior: 'Sênior' },
-          icon: <Ticket size={24} className="text-accent" />,
-          buttonClass: 'bg-accent text-slate-900 hover:bg-yellow-400 font-bold rounded-lg',
-          inputClass: 'bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-accent'
-        };
+  const nextFromVisit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!validVisitDate(date)) {
+      setError(
+        new Date(`${date}T12:00:00`).getDay() === 1
+          ? 'O parque funciona de terça a domingo. Escolha outro dia para sua visita.'
+          : 'Escolha uma data válida a partir de hoje.',
+      );
+      return;
     }
+    if (count === 0) {
+      setError('Selecione pelo menos um ingresso.');
+      return;
+    }
+    setError('');
+    setStep(2);
   };
 
-  const theme = getThemeContent();
+  const nextFromCustomer = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (customer.name.trim().split(/\s+/).length < 2) {
+      setError('Informe seu nome e sobrenome.');
+      return;
+    }
+    if ((customer.cpf || !isDemo) && !isValidCPF(customer.cpf)) {
+      setError('Confira o CPF informado. Ele deve conter 11 dígitos válidos.');
+      return;
+    }
+    const phone = customer.phone.replace(/\D/g, '');
+    if ((phone || !isDemo) && ![10, 11].includes(phone.length)) {
+      setError('Informe um telefone válido, incluindo o DDD.');
+      return;
+    }
+    setError('');
+    setStep(3);
+  };
 
-  const handleConfirmPurchase = async () => {
-    setIsProcessing(true);
-    const orderPayload: CheckoutData = {
+  const confirm = async () => {
+    if (processing) return;
+    setError('');
+    if (!onCheckout) {
+      setStep(4);
+      return;
+    }
+    const version = requestVersion.current;
+    setProcessing(true);
+    try {
+      await onCheckout({
         theme: currentTheme,
         visitDate: date,
-        tickets: tickets,
-        customer: customer,
+        tickets: { ...tickets },
+        customer: {
+          ...customer,
+          name: customer.name.trim(),
+          email: customer.email.trim(),
+          cpf: cpfDigits(customer.cpf),
+          phone: customer.phone.replace(/\D/g, ''),
+        },
         totalAmount: total,
-        paymentMethod: paymentMethod
-    };
-    console.log("Enviando Pedido:", orderPayload);
-    if (onCheckout) {
-        await onCheckout(orderPayload);
-    } else {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        paymentMethod,
+      });
+      if (requestVersion.current === version) setStep(4);
+    } catch {
+      if (requestVersion.current === version)
+        setError(
+          'Não recebemos a confirmação do pedido. Verifique com a equipe antes de tentar novamente.',
+        );
+    } finally {
+      if (requestVersion.current === version) setProcessing(false);
     }
-    setIsProcessing(false);
-    setStep(4);
   };
 
   return (
-    <div className={`fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 ${theme.bgOverlay} transition-all duration-500`}>
-      
-      <div className={`w-full max-w-4xl h-full md:h-auto md:max-h-[85vh] flex flex-col md:flex-row overflow-hidden relative animate-slide-up 
-        ${theme.modalBg} 
-        ${currentTheme === 'futuristic' ? 'rounded-none' : 'rounded-none md:rounded-3xl'}`
-      }>
-        
-        {currentTheme === 'futuristic' && (
-            <>
-                <div className="hidden md:block absolute top-0 left-0 w-32 h-32 border-l-4 border-t-4 border-[#00f3ff] rounded-tl-3xl opacity-50 pointer-events-none z-10"></div>
-                <div className="hidden md:block absolute bottom-0 right-0 w-32 h-32 border-r-4 border-b-4 border-[#00f3ff] rounded-br-3xl opacity-50 pointer-events-none z-10"></div>
-            </>
-        )}
-
-        <button 
-          onClick={onClose}
-          className={`absolute top-2 right-2 md:top-4 md:right-4 z-50 p-3 rounded-full transition-colors 
-            ${currentTheme === 'futuristic' ? 'text-[#00f3ff] hover:bg-[#00f3ff]/20' : 
-              currentTheme === 'medieval' ? 'text-[#800000] hover:bg-[#800000]/10' : 
-              'text-slate-400 hover:bg-white/10 hover:text-white'}`}
-        >
-          <X size={28} />
-        </button>
-
-        {/* --- COLUNA ESQUERDA (VISUAL) --- */}
-        <div className={`w-full md:w-1/3 p-5 md:p-8 flex flex-col justify-between relative shrink-0 overflow-hidden
-            ${currentTheme === 'futuristic' ? 'bg-black/80 md:border-r border-b md:border-b-0 border-[#00f3ff]/30' : 
-              currentTheme === 'medieval' ? 'bg-[#eaddcf] md:border-r-2 border-b-2 md:border-b-0 border-[#5c4033] border-dashed' : 
-              currentTheme === 'glacial' ? 'bg-cyan-900/20 border-b md:border-b-0 border-cyan-200' : 
-              'bg-slate-900 md:border-r border-b md:border-b-0 border-slate-700'}`
-        }>
-            
-            {/* Lógica de Fundo Personalizada (Glacial vs Outros) */}
-            <div className="absolute inset-0 z-0">
-                {currentTheme === 'glacial' ? (
-                   <>
-                      {/* Efeito Glacial: Base + Overlay Azul Pulsante (Igual ao Hero) */}
-                      <div className="absolute inset-0 bg-[#0f1c2e]"></div>
-                      <img 
-                        src={glacialCastle} 
-                        alt="Castelo Glacial" 
-                        className="w-full h-full object-cover opacity-80" 
-                      />
-                      <img 
-                        src={glacialOverlay} 
-                        alt="Efeito Glacial" 
-                        className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-40 animate-pulse-slow" 
-                      />
-                   </>
-                ) : (
-                    /* Imagem Padrão para os outros temas */
-                    <img 
-                        src={activeImage} 
-                        alt="Tema" 
-                        className={`w-full h-full object-cover transition-opacity duration-500
-                            ${currentTheme === 'medieval' ? 'opacity-20 sepia' : 'opacity-40'}
-                        `} 
-                    />
-                )}
-                
-                {/* Overlay Gradiente comum a todos */}
-                <div className={`absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50 md:bg-gradient-to-t md:from-black/80 md:to-transparent`}></div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      titleId="ticket-title"
+      className="ticket-modal"
+      closeLabel="Fechar planejador de ingressos"
+    >
+      <div className="ticket-layout">
+        <aside className="ticket-summary">
+          <img className="ticket-summary__image" src={CASTLE_IMAGE} alt="" />
+          <div className="ticket-summary__shade" />
+          <div className="ticket-summary__intro">
+            <div className="ticket-summary__brand">
+              <Castle size={22} strokeWidth={1.3} aria-hidden="true" /> SETLAND
             </div>
-
-            <div className="relative z-10 flex md:block items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-6">
-                      {theme.icon}
-                      <span className={`text-sm md:text-xl font-bold tracking-wider ${theme.text} opacity-80 drop-shadow-md`}>SETLAND</span>
-                  </div>
-                  <h2 className={`text-2xl md:text-4xl font-bold leading-tight ${theme.text} drop-shadow-lg`}>
-                      {theme.title}
-                  </h2>
-                </div>
-                
-                <div className="md:hidden text-right">
-                    <p className={`text-xs opacity-70 ${theme.text}`}>Total</p>
-                    <span className={`text-xl font-bold ${theme.accent}`}>
-                      {total.toFixed(2)}
-                    </span>
-                </div>
-            </div>
-            
-            <p className={`relative z-10 hidden md:block text-sm opacity-90 mb-8 ${theme.text} font-medium`}>
-                {theme.subtitle}
+            <span className="eyebrow">Seu próximo capítulo</span>
+            <h3>
+              Boas histórias
+              <br />
+              começam aqui.
+            </h3>
+            <p>
+              Um destino. Três eras.
+              <br />
+              Um dia para guardar na memória.
             </p>
-
-            <div className={`relative z-10 hidden md:block p-4 rounded-xl space-y-3 backdrop-blur-md
-                ${currentTheme === 'futuristic' ? 'border border-[#00f3ff]/30 bg-black/60' : 
-                  currentTheme === 'medieval' ? 'border border-[#5c4033]/30 bg-[#fffdf5]/80' : 
-                  'bg-white/10 border border-white/10'}`
-            }>
-                <h3 className={`text-xs uppercase tracking-widest font-bold opacity-60 ${theme.text}`}>Resumo</h3>
-                
-                {date && (
-                    <div className="flex items-center gap-2 text-sm">
-                        <Calendar size={16} className={theme.accent} />
-                        <span className={theme.text}>{new Date(date).toLocaleDateString('pt-BR')}</span>
+          </div>
+          <div className="ticket-summary__details">
+            <div>
+              <CalendarDays size={16} aria-hidden="true" />
+              <span>{formattedDate}</span>
+            </div>
+            <div>
+              <Ticket size={16} aria-hidden="true" />
+              <span>
+                {count} {count === 1 ? 'ingresso selecionado' : 'ingressos selecionados'}
+              </span>
+            </div>
+            <div className="ticket-summary__total">
+              <span>{isDemo ? 'Total estimado' : 'Total'}</span>
+              <strong aria-live="polite">{formatCurrency(total)}</strong>
+            </div>
+            <p>
+              {isDemo
+                ? 'Simulação sem cobrança ou reserva.'
+                : 'Confira todos os dados antes de confirmar.'}
+            </p>
+          </div>
+        </aside>
+        <div className="ticket-content" ref={stepScroll}>
+          <span className="eyebrow">
+            {isDemo ? 'Planejador de ingressos' : 'Sua visita ao Setland'}
+          </span>
+          <h2 id="ticket-title">
+            {step === 4 ? 'Até a próxima aventura.' : 'Planeje sua visita.'}
+          </h2>
+          <ol className="checkout-steps" aria-label="Etapas do planejamento">
+            {['Sua visita', 'Seus dados', 'Revisão'].map((label, index) => (
+              <li
+                className={
+                  step === index + 1 ? 'is-current' : step > index + 1 ? 'is-complete' : ''
+                }
+                key={label}
+                aria-current={step === index + 1 ? 'step' : undefined}
+              >
+                <span>{step > index + 1 ? <Check size={13} aria-hidden="true" /> : index + 1}</span>
+                {label}
+              </li>
+            ))}
+          </ol>
+          {isDemo && step !== 4 && (
+            <div className="checkout-demo">
+              <Info size={17} aria-hidden="true" />
+              <p>
+                Você está em uma <strong>simulação</strong>. Não há cobrança ou emissão de
+                ingressos. Confirme sua compra com a equipe.
+              </p>
+            </div>
+          )}
+          {step < 4 && (
+            <div className="ticket-mobile-total">
+              <span>
+                {count} {count === 1 ? 'ingresso' : 'ingressos'} ·{' '}
+                {isDemo ? 'Total estimado' : 'Total'}
+              </span>
+              <strong aria-live="polite">{formatCurrency(total)}</strong>
+            </div>
+          )}
+          {step === 1 && (
+            <form onSubmit={nextFromVisit} className="checkout-form">
+              <h3 ref={stepTitle} tabIndex={-1}>
+                Quando vamos viver essa história?
+              </h3>
+              <div className="form-field">
+                <label htmlFor="visit-date">Data da visita</label>
+                <input
+                  id="visit-date"
+                  type="date"
+                  required
+                  min={localDateISO()}
+                  value={date}
+                  onChange={(event) => {
+                    setDate(event.target.value);
+                    setError('');
+                  }}
+                  aria-describedby="visit-date-hint"
+                />
+                <span id="visit-date-hint" className="form-hint">
+                  Terça a domingo, das 9h às 18h.
+                </span>
+              </div>
+              <fieldset className="ticket-counters">
+                <legend>Quem vem com você?</legend>
+                {ticketLabels.map(({ id, label, detail }) => (
+                  <div className="ticket-counter" key={id}>
+                    <div>
+                      <span className="ticket-counter__name">
+                        {label}
+                        <small>{detail}</small>
+                      </span>
+                      <span className="ticket-counter__price">
+                        {formatCurrency(TICKET_PRICES[id])}
+                      </span>
                     </div>
+                    <div className="counter-controls">
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Remover ingresso ${label.toLowerCase()}`}
+                        disabled={tickets[id] === 0}
+                        onClick={() =>
+                          setTickets((previous) => ({
+                            ...previous,
+                            [id]: Math.max(0, previous[id] - 1),
+                          }))
+                        }
+                      >
+                        <Minus size={15} aria-hidden="true" />
+                      </button>
+                      <output aria-label={`Quantidade ${label.toLowerCase()}`}>
+                        {tickets[id]}
+                      </output>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Adicionar ingresso ${label.toLowerCase()}`}
+                        disabled={tickets[id] >= 20}
+                        onClick={() =>
+                          setTickets((previous) => ({
+                            ...previous,
+                            [id]: Math.min(20, previous[id] + 1),
+                          }))
+                        }
+                      >
+                        <Plus size={15} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </fieldset>
+              <p className="form-hint">
+                Crianças de até 5 anos não pagam. Apresente documento de identificação.
+              </p>
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" fullWidth disabled={!date || count === 0}>
+                Continuar <ArrowRight size={17} aria-hidden="true" />
+              </Button>
+            </form>
+          )}
+          {step === 2 && (
+            <form onSubmit={nextFromCustomer} className="checkout-form">
+              <button
+                type="button"
+                className="text-link checkout-back"
+                onClick={() => {
+                  setStep(1);
+                  setError('');
+                }}
+              >
+                <ArrowLeft size={14} aria-hidden="true" /> Voltar à visita
+              </button>
+              <h3 ref={stepTitle} tabIndex={-1}>
+                Quem vai viver essa aventura?
+              </h3>
+              <div className="form-field">
+                <label htmlFor="customer-name">Nome completo</label>
+                <input
+                  id="customer-name"
+                  value={customer.name}
+                  onChange={(event) => setCustomer({ ...customer, name: event.target.value })}
+                  autoComplete="name"
+                  placeholder="Seu nome e sobrenome"
+                  required
+                  minLength={3}
+                  maxLength={100}
+                />
+              </div>
+              <div className="form-field">
+                <label htmlFor="customer-email">E-mail</label>
+                <input
+                  id="customer-email"
+                  type="email"
+                  value={customer.email}
+                  onChange={(event) => setCustomer({ ...customer, email: event.target.value })}
+                  autoComplete="email"
+                  placeholder="voce@exemplo.com"
+                  required
+                  maxLength={150}
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-field">
+                  <label htmlFor="customer-cpf">CPF {isDemo && <span>(opcional)</span>}</label>
+                  <input
+                    id="customer-cpf"
+                    inputMode="numeric"
+                    value={customer.cpf}
+                    onChange={(event) =>
+                      setCustomer({ ...customer, cpf: formatCPF(event.target.value) })
+                    }
+                    placeholder="000.000.000-00"
+                    required={!isDemo}
+                    maxLength={14}
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="customer-phone">
+                    Celular {isDemo && <span>(opcional)</span>}
+                  </label>
+                  <input
+                    id="customer-phone"
+                    type="tel"
+                    inputMode="tel"
+                    value={customer.phone}
+                    onChange={(event) =>
+                      setCustomer({ ...customer, phone: formatPhone(event.target.value) })
+                    }
+                    autoComplete="tel-national"
+                    placeholder="(00) 00000-0000"
+                    required={!isDemo}
+                    maxLength={15}
+                  />
+                </div>
+              </div>
+              <p className="form-hint">
+                {isDemo
+                  ? 'Seus dados ficam apenas nesta simulação e são apagados ao fechar esta janela.'
+                  : 'Confira seus dados antes de enviar o pedido ao serviço de ingressos.'}
+              </p>
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" fullWidth>
+                Revisar minha visita <ArrowRight size={17} aria-hidden="true" />
+              </Button>
+            </form>
+          )}
+          {step === 3 && (
+            <div className="checkout-form">
+              <button
+                className="text-link checkout-back"
+                onClick={() => {
+                  setStep(2);
+                  setError('');
+                }}
+                disabled={processing}
+              >
+                <ArrowLeft size={14} aria-hidden="true" /> Voltar aos dados
+              </button>
+              <h3 ref={stepTitle} tabIndex={-1}>
+                Tudo pronto para a próxima história?
+              </h3>
+              <dl className="checkout-review">
+                <div>
+                  <dt>Visitante</dt>
+                  <dd>{customer.name}</dd>
+                </div>
+                <div>
+                  <dt>E-mail</dt>
+                  <dd>{customer.email}</dd>
+                </div>
+                <div>
+                  <dt>Sua visita</dt>
+                  <dd>{formattedDate}</dd>
+                </div>
+                {ticketLabels
+                  .filter(({ id }) => tickets[id] > 0)
+                  .map(({ id, label }) => (
+                    <div key={id}>
+                      <dt>
+                        {tickets[id]} × {label}
+                      </dt>
+                      <dd>{formatCurrency(tickets[id] * TICKET_PRICES[id])}</dd>
+                    </div>
+                  ))}
+                <div className="checkout-review__total">
+                  <dt>Total {isDemo && 'estimado'}</dt>
+                  <dd>{formatCurrency(total)}</dd>
+                </div>
+              </dl>
+              <fieldset className="payment-methods" disabled={processing}>
+                <legend>Preferência de pagamento</legend>
+                {[
+                  { value: 'pix' as const, label: 'Pix', icon: Wallet },
+                  { value: 'credit_card' as const, label: 'Cartão', icon: CreditCard },
+                ].map(({ value, label, icon: Icon }) => (
+                  <label key={value} className={paymentMethod === value ? 'is-selected' : ''}>
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={value}
+                      checked={paymentMethod === value}
+                      onChange={() => setPaymentMethod(value)}
+                    />
+                    <Icon size={20} strokeWidth={1.4} aria-hidden="true" />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </fieldset>
+              <p className="form-hint">
+                {isDemo
+                  ? 'Nenhum dado bancário é solicitado. A simulação não reserva a data nem garante disponibilidade.'
+                  : 'A confirmação depende do serviço de ingressos e da disponibilidade.'}
+              </p>
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <Button fullWidth onClick={() => void confirm()} disabled={processing}>
+                {processing ? (
+                  <>
+                    <LoaderCircle size={17} className="spin" aria-hidden="true" /> Aguardando
+                    confirmação…
+                  </>
+                ) : (
+                  <>
+                    {isDemo ? 'Concluir simulação' : 'Confirmar pedido'}
+                    <ArrowRight size={17} aria-hidden="true" />
+                  </>
                 )}
-                
-                <div className="space-y-1">
-                   <div className={`flex justify-between text-sm ${theme.text} opacity-80`}>
-                      <span>{tickets.adult + tickets.child + tickets.senior} Ingressos</span>
-                   </div>
-                </div>
-
-                <div className={`border-t pt-3 mt-2 flex justify-between items-end ${currentTheme === 'medieval' ? 'border-[#5c4033]/20' : 'border-white/20'}`}>
-                    <span className={`text-sm ${theme.text}`}>Total</span>
-                    <span className={`text-2xl font-bold ${theme.accent}`}>
-                        {currentTheme === 'futuristic' ? 'C$ ' : 'R$ '}
-                        {total.toFixed(2).replace('.', ',')}
-                    </span>
-                </div>
+              </Button>
             </div>
-
-            <div className="relative z-10 hidden md:flex gap-2 mt-8">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 
-                        ${step >= i ? theme.accentBg : 'bg-gray-500/40'}`} 
-                    />
-                ))}
+          )}
+          {step === 4 && (
+            <div className="checkout-success">
+              <span className="checkout-success__icon">
+                <CheckCircle2 size={37} strokeWidth={1.2} aria-hidden="true" />
+              </span>
+              <h3 ref={stepTitle} tabIndex={-1}>
+                {isDemo ? 'Sua aventura está planejada.' : 'Pedido confirmado.'}
+              </h3>
+              <p>
+                {isDemo
+                  ? 'Simulação concluída! Não houve cobrança nem emissão de ingressos. Agora, fale com a equipe para confirmar sua visita.'
+                  : 'O serviço de ingressos confirmou o pedido. Consulte a equipe para acompanhar a emissão dos ingressos.'}
+              </p>
+              <div className="checkout-success__summary">
+                <CalendarDays size={20} aria-hidden="true" />
+                <div>
+                  <strong>{formattedDate}</strong>
+                  <span>
+                    {count} {count === 1 ? 'ingresso' : 'ingressos'} · {formatCurrency(total)}
+                  </span>
+                </div>
+              </div>
+              <a
+                className="button button--primary button--full"
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Falar com a equipe <ArrowUpRight size={17} aria-hidden="true" />
+              </a>
+              <Button variant="ghost" fullWidth onClick={onClose}>
+                Continuar explorando
+              </Button>
             </div>
-        </div>
-
-        {/* --- COLUNA DIREITA (FORMULÁRIO) --- */}
-        <div className="w-full md:w-2/3 flex-1 overflow-y-auto p-5 md:p-8 relative bg-transparent">
-            
-            {/* Steps Indicator Mobile */}
-            <div className="flex md:hidden gap-2 mb-6">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 
-                        ${step >= i ? theme.accentBg : 'bg-current opacity-20'}`} 
-                    />
-                ))}
-            </div>
-
-            {/* STEP 1: Seleção */}
-            {step === 1 && (
-                <div className="space-y-6 md:space-y-8 animate-fade-in pb-20">
-                    <div>
-                        <label className={`block text-xs md:text-sm font-bold mb-3 uppercase tracking-wider ${theme.text}`}>
-                            1. Escolha a Data
-                        </label>
-                        <input 
-                            type="date" 
-                            min={new Date().toISOString().split('T')[0]}
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className={`w-full p-3 md:p-4 outline-none transition-all rounded-lg appearance-none ${theme.inputClass}`}
-                        />
-                    </div>
-
-                    <div>
-                        <label className={`block text-xs md:text-sm font-bold mb-3 uppercase tracking-wider ${theme.text}`}>
-                            2. Selecione os Ingressos
-                        </label>
-                        <div className="space-y-3 md:space-y-4">
-                            <TicketCounter 
-                                label={theme.labels.adult}
-                                price={PRICES.adult}
-                                value={tickets.adult}
-                                onChange={(v) => setTickets({...tickets, adult: v})}
-                                theme={theme}
-                                currentTheme={currentTheme}
-                            />
-                            <TicketCounter 
-                                label={theme.labels.child}
-                                subLabel="06-12 anos"
-                                price={PRICES.child}
-                                value={tickets.child}
-                                onChange={(v) => setTickets({...tickets, child: v})}
-                                theme={theme}
-                                currentTheme={currentTheme}
-                            />
-                            <TicketCounter 
-                                label={theme.labels.senior}
-                                subLabel="60+ anos"
-                                price={PRICES.senior}
-                                value={tickets.senior}
-                                onChange={(v) => setTickets({...tickets, senior: v})}
-                                theme={theme}
-                                currentTheme={currentTheme}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="pt-4">
-                        <button 
-                            onClick={() => setStep(2)}
-                            disabled={!date || total === 0}
-                            className={`w-full py-4 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base ${theme.buttonClass}`}
-                        >
-                            Continuar <ChevronRight size={20} />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* STEP 2: Dados Pessoais */}
-            {step === 2 && (
-                <div className="space-y-6 animate-fade-in pb-20">
-                    <button onClick={() => setStep(1)} className={`flex items-center gap-2 text-sm hover:underline mb-2 ${theme.text} opacity-60`}>
-                        <ArrowLeft size={16} /> Voltar
-                    </button>
-                    
-                    <h3 className={`text-xl md:text-2xl font-bold ${theme.text}`}>Quem vai embarcar?</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className={`text-xs uppercase font-bold ${theme.text}`}>Nome Completo</label>
-                            <input 
-                                type="text" 
-                                placeholder="Seu nome" 
-                                value={customer.name}
-                                onChange={(e) => setCustomer({...customer, name: e.target.value})}
-                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className={`text-xs uppercase font-bold ${theme.text}`}>E-mail</label>
-                            <input 
-                                type="email" 
-                                inputMode="email" 
-                                placeholder="seu@email.com" 
-                                value={customer.email}
-                                onChange={(e) => setCustomer({...customer, email: e.target.value})}
-                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className={`text-xs uppercase font-bold ${theme.text}`}>CPF</label>
-                            <input 
-                                type="tel" 
-                                placeholder="000.000.000-00" 
-                                value={customer.cpf}
-                                onChange={(e) => setCustomer({...customer, cpf: e.target.value})}
-                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className={`text-xs uppercase font-bold ${theme.text}`}>Celular</label>
-                            <input 
-                                type="tel" 
-                                placeholder="(00) 00000-0000" 
-                                value={customer.phone}
-                                onChange={(e) => setCustomer({...customer, phone: e.target.value})}
-                                className={`w-full p-3 outline-none rounded-lg ${theme.inputClass}`} 
-                            />
-                        </div>
-                    </div>
-
-                    <div className="pt-4">
-                        <button 
-                            onClick={() => setStep(3)}
-                            disabled={!customer.name || !customer.email}
-                            className={`w-full py-4 flex items-center justify-center gap-2 transition-all disabled:opacity-50 text-sm md:text-base ${theme.buttonClass}`}
-                        >
-                            Ir para Pagamento <CreditCard size={20} />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* STEP 3: Pagamento */}
-            {step === 3 && (
-                <div className="space-y-6 animate-fade-in pb-20">
-                    <button onClick={() => setStep(2)} className={`flex items-center gap-2 text-sm hover:underline mb-2 ${theme.text} opacity-60`}>
-                        <ArrowLeft size={16} /> Voltar
-                    </button>
-
-                    <h3 className={`text-xl md:text-2xl font-bold ${theme.text}`}>Pagamento</h3>
-
-                    <div className="space-y-3">
-                        <button 
-                            onClick={() => setPaymentMethod('pix')}
-                            className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-95 ${theme.text}
-                                ${paymentMethod === 'pix' ? `bg-white/10 ${theme.border}` : 'border-transparent hover:bg-white/5'}
-                            `}
-                        >
-                            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 shrink-0">
-                                <Zap size={20} />
-                            </div>
-                            <div className="text-left flex-1">
-                                <div className="font-bold">PIX</div>
-                                <div className="text-xs opacity-70">Aprovação Imediata</div>
-                            </div>
-                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${theme.border}`}>
-                                {paymentMethod === 'pix' && <div className={`w-2 h-2 rounded-full ${theme.accentBg}`}></div>}
-                            </div>
-                        </button>
-
-                        <button 
-                            onClick={() => setPaymentMethod('credit_card')}
-                            className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-95 ${theme.text}
-                                ${paymentMethod === 'credit_card' ? `bg-white/10 ${theme.border}` : 'border-transparent hover:bg-white/5'}
-                            `}
-                        >
-                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
-                                <CreditCard size={20} />
-                            </div>
-                            <div className="text-left flex-1">
-                                <div className="font-bold">Cartão</div>
-                                <div className="text-xs opacity-70">Até 3x sem juros</div>
-                            </div>
-                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${theme.border}`}>
-                                {paymentMethod === 'credit_card' && <div className={`w-2 h-2 rounded-full ${theme.accentBg}`}></div>}
-                            </div>
-                        </button>
-                    </div>
-
-                    <div className="pt-4">
-                        <button 
-                            onClick={handleConfirmPurchase}
-                            disabled={isProcessing}
-                            className={`w-full py-4 flex items-center justify-center gap-2 transition-all text-sm md:text-base ${theme.buttonClass} disabled:opacity-70`}
-                        >
-                            {isProcessing ? (
-                                <><Loader2 className="animate-spin" /> Processando...</>
-                            ) : (
-                                "Confirmar Compra"
-                            )}
-                        </button>
-                        <p className={`text-center text-xs mt-3 opacity-50 ${theme.text}`}>
-                            Ambiente 100% Seguro.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* STEP 4: Sucesso */}
-            {step === 4 && (
-                <div className="h-full flex flex-col items-center justify-center text-center animate-slide-up pb-20">
-                    <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-6 
-                        ${currentTheme === 'futuristic' ? 'bg-[#00f3ff]/20 text-[#00f3ff]' : 
-                          currentTheme === 'medieval' ? 'bg-[#800000]/20 text-[#800000]' : 
-                          'bg-green-100 text-green-600'}`
-                    }>
-                        <CheckCircle size={40} className="md:w-12 md:h-12" />
-                    </div>
-                    <h2 className={`text-2xl md:text-3xl font-bold mb-2 ${theme.text}`}>
-                        {currentTheme === 'medieval' ? 'Glória ao Reino!' : 'Sucesso!'}
-                    </h2>
-                    <p className={`mb-8 max-w-xs mx-auto opacity-70 text-sm md:text-base ${theme.text}`}>
-                        Seus ingressos foram enviados para <strong>{customer.email}</strong>.
-                    </p>
-                    <div className={`p-4 rounded-lg mb-8 font-mono text-lg tracking-widest border border-dashed ${theme.border} ${theme.text}`}>
-                        #SL-{Math.floor(Math.random() * 99999)}
-                    </div>
-                    <button 
-                        onClick={onClose}
-                        className={`px-8 py-3 rounded-lg transition-all w-full md:w-auto ${theme.buttonClass}`}
-                    >
-                        Fechar
-                    </button>
-                </div>
-            )}
-
+          )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
-};
-
-const TicketCounter: React.FC<{ 
-    label: string, 
-    subLabel?: string, 
-    price: number, 
-    value: number, 
-    onChange: (val: number) => void,
-    theme: any,
-    currentTheme: string
-}> = ({ label, subLabel, price, value, onChange, theme, currentTheme }) => (
-    <div className={`flex items-center justify-between p-3 md:p-4 rounded-xl border transition-all
-        ${currentTheme === 'futuristic' ? 'border-[#00f3ff]/30 hover:border-[#00f3ff]' : 
-          currentTheme === 'medieval' ? 'border-[#5c4033]/30 hover:border-[#5c4033] bg-[#fffdf5]' : 
-          'bg-white/5 border-white/10 hover:bg-white/10'}`
-    }>
-        <div>
-            <div className={`font-bold text-sm md:text-base ${theme.text}`}>{label}</div>
-            {subLabel && <div className={`text-[10px] md:text-xs opacity-60 ${theme.text}`}>{subLabel}</div>}
-            <div className={`font-mono text-xs md:text-sm mt-1 ${theme.accent}`}>
-                R$ {price.toFixed(2).replace('.', ',')}
-            </div>
-        </div>
-        <div className="flex items-center gap-3">
-            <button 
-                onClick={() => onChange(Math.max(0, value - 1))}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors 
-                    ${currentTheme === 'futuristic' ? 'border border-[#00f3ff] text-[#00f3ff] hover:bg-[#00f3ff] hover:text-black' : 
-                      currentTheme === 'medieval' ? 'bg-[#5c4033] text-[#f5e6d3] hover:bg-[#800000]' : 
-                      'bg-slate-700 text-white hover:bg-slate-600'}`}
-            >
-                -
-            </button>
-            <span className={`w-6 text-center font-bold ${theme.text}`}>{value}</span>
-            <button 
-                onClick={() => onChange(value + 1)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors 
-                    ${currentTheme === 'futuristic' ? 'bg-[#00f3ff] text-black hover:bg-white' : 
-                      currentTheme === 'medieval' ? 'bg-[#800000] text-[#f5e6d3] hover:bg-[#5c4033]' : 
-                      'bg-accent text-slate-900 hover:bg-yellow-400'}`}
-            >
-                +
-            </button>
-        </div>
-    </div>
-);
+}

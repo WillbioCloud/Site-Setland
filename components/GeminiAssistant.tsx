@@ -1,130 +1,150 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot } from 'lucide-react';
-import { getGeminiResponse } from '../services/geminiService';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUpRight, Compass, LoaderCircle, MessageCircle, Send, Ticket } from 'lucide-react';
+import { getGeminiResponse, hasConnectedAssistant } from '../services/geminiService';
+import { Modal } from './Modal';
 
 interface Message {
-  id: string;
+  id: number;
   sender: 'user' | 'bot';
   text: string;
 }
 
-export const GeminiAssistant: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+export function GeminiAssistant({ onOpenTickets }: { onOpenTickets: () => void }) {
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', sender: 'bot', text: 'Olá! Sou o assistente virtual do SetLand. Em que posso ajudar? 🎢' }
+    {
+      id: 0,
+      sender: 'bot',
+      text: 'Olá, viajante! Vamos planejar uma boa história? Posso ajudar você a conhecer o Setland e preparar sua visita.',
+    },
   ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const sending = useRef(false);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isOpen]);
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, loading, open]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: input };
-    setMessages(prev => [...prev, userMsg]);
+  const send = async (text = input) => {
+    const message = text.trim();
+    if (!message || sending.current) return;
+    sending.current = true;
+    setLoading(true);
     setInput('');
-    setIsLoading(true);
-
-    const replyText = await getGeminiResponse(userMsg.text);
-    
-    const botMsg: Message = { id: (Date.now() + 1).toString(), sender: 'bot', text: replyText };
-    setMessages(prev => [...prev, botMsg]);
-    setIsLoading(false);
+    setMessages((previous) => [...previous, { id: Date.now(), sender: 'user', text: message }]);
+    try {
+      const reply = await getGeminiResponse(message);
+      setMessages((previous) => [...previous, { id: Date.now() + 1, sender: 'bot', text: reply }]);
+    } finally {
+      sending.current = false;
+      setLoading(false);
+      inputRef.current?.focus({ preventScroll: true });
+    }
   };
 
   return (
     <>
-      {/* Floating Button */}
       <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-40 bg-accent text-slate-900 p-4 rounded-full shadow-lg shadow-accent/40 hover:scale-110 transition-transform duration-300 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
-        aria-label="Abrir assistente virtual"
+        className="assistant-launcher"
+        onClick={() => setOpen(true)}
+        aria-label="Abrir guia virtual do Setland"
+        aria-haspopup="dialog"
       >
-        <MessageCircle size={28} />
+        <MessageCircle size={20} strokeWidth={1.5} aria-hidden="true" />
+        <span>Posso ajudar?</span>
+        <span className="assistant-launcher__dot" />
       </button>
-
-      {/* Chat Window */}
-      <div 
-        className={`fixed bottom-6 right-6 w-[90vw] md:w-[380px] h-[500px] bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden transition-all duration-300 origin-bottom-right
-          ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}
-        `}
+      <Modal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        titleId="assistant-title"
+        className="assistant-dialog"
+        closeLabel="Fechar guia virtual"
       >
-        {/* Header */}
-        <div className="bg-slate-900 p-4 border-b border-slate-700 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <Bot size={24} />
-            </div>
-            <div>
-              <h3 className="font-bold text-white">SetBot</h3>
-              <p className="text-xs text-green-400 flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online
-              </p>
-            </div>
+        <div className="assistant-header">
+          <span className="assistant-avatar">
+            <Compass size={24} strokeWidth={1.3} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 id="assistant-title">Seu guia Setland</h2>
+            <p>{hasConnectedAssistant ? 'Assistente virtual' : 'Informações para sua visita'}</p>
           </div>
-          <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-            <X size={20} />
-          </button>
         </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-800/50">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div 
-                className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed
-                  ${msg.sender === 'user' 
-                    ? 'bg-accent text-slate-900 rounded-tr-none' 
-                    : 'bg-slate-700 text-slate-100 rounded-tl-none'}
-                `}
-              >
-                {msg.text}
-              </div>
+        <div
+          className="assistant-messages"
+          ref={scrollRef}
+          role="log"
+          aria-label="Conversa com o guia"
+          aria-live="polite"
+          aria-relevant="additions text"
+        >
+          <span className="assistant-greeting">Toda grande aventura começa com uma pergunta.</span>
+          {messages.map((message) => (
+            <div key={message.id} className={`chat-message chat-message--${message.sender}`}>
+              <span className="sr-only">{message.sender === 'bot' ? 'Guia: ' : 'Você: '}</span>
+              {message.text}
             </div>
           ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-slate-700 p-3 rounded-2xl rounded-tl-none flex gap-1">
-                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
-                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-100"></span>
-                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-200"></span>
-              </div>
+          {messages.length === 1 && (
+            <div className="assistant-suggestions">
+              {['Horários de visita', 'Parque de Gelo', 'Ingressos e valores'].map((suggestion) => (
+                <button key={suggestion} onClick={() => void send(suggestion)}>
+                  {suggestion}
+                  <ArrowUpRight size={13} aria-hidden="true" />
+                </button>
+              ))}
             </div>
           )}
-          <div ref={messagesEndRef} />
+          {loading && (
+            <div className="assistant-thinking" role="status">
+              <LoaderCircle size={16} className="spin" aria-hidden="true" /> Consultando o guia…
+            </div>
+          )}
         </div>
-
-        {/* Input */}
-        <div className="p-4 bg-slate-900 border-t border-slate-700">
-          <form 
-            onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-            className="flex gap-2"
+        <div className="assistant-input-area">
+          <button
+            className="assistant-ticket-link"
+            onClick={() => {
+              setOpen(false);
+              onOpenTickets();
+            }}
           >
+            <Ticket size={15} aria-hidden="true" /> Planejar minha visita{' '}
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </button>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void send();
+            }}
+          >
+            <label className="sr-only" htmlFor="assistant-message">
+              Sua pergunta
+            </label>
             <input
-              type="text"
+              ref={inputRef}
+              id="assistant-message"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Pergunte sobre horários, atrações..."
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="O que você quer descobrir?"
+              maxLength={600}
+              autoComplete="off"
             />
-            <button 
-              type="submit" 
-              disabled={isLoading || !input.trim()}
-              className="bg-accent text-slate-900 p-2 rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            <button
+              type="submit"
+              className="icon-button"
+              aria-label="Enviar pergunta"
+              disabled={loading || !input.trim()}
             >
-              <Send size={20} />
+              <Send size={18} aria-hidden="true" />
             </button>
           </form>
+          <p>Não compartilhe dados pessoais ou de pagamento.</p>
         </div>
-      </div>
+      </Modal>
     </>
   );
-};
+}

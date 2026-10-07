@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local checks and browser artifacts
+.artifacts/
+.npm-audit.json
+playwright-report/
+test-results/
+
+image-search/
