@@ -5,6 +5,7 @@ import {
   Box3,
   BoxGeometry,
   BufferAttribute,
+  BufferGeometry,
   CanvasTexture,
   Clock,
   CylinderGeometry,
@@ -12,6 +13,7 @@ import {
   DoubleSide,
   Group,
   MathUtils,
+  Material,
   Mesh,
   MeshStandardMaterial,
   PCFSoftShadowMap,
@@ -22,6 +24,7 @@ import {
   Scene,
   SphereGeometry,
   SRGBColorSpace,
+  Texture,
   TextureLoader,
   TorusGeometry,
   Vector3,
@@ -41,6 +44,19 @@ type MapCanvasProps = {
   motion: MutableRefObject<SceneMotion>;
   onFailure: () => void;
 };
+
+type ParchmentSurface = {
+  geometry: BufferGeometry;
+  openPositions: Float32Array;
+  rolledPositions: Float32Array;
+};
+
+const MAP_WIDTH = 5.35;
+const MAP_DEPTH = 2.9;
+const MAP_SURFACE_Y = 0.145;
+const ROLL_INNER_RADIUS = 0.14;
+const ROLL_OUTER_RADIUS = 0.28;
+const ROLL_TURNS = 4;
 
 function makeWoodTexture() {
   const canvas = document.createElement('canvas');
@@ -89,17 +105,26 @@ function makeWoodTexture() {
 }
 
 function disposeObject(root: Group | Scene) {
+  const geometries = new Set<BufferGeometry>();
+  const materials = new Set<Material>();
+  const textures = new Set<Texture>();
+
   root.traverse((object) => {
     const mesh = object as Mesh;
     if (!mesh.isMesh) return;
-    mesh.geometry.dispose();
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    materials.forEach((material) => {
-      const standardMaterial = material as MeshStandardMaterial;
-      standardMaterial.map?.dispose();
-      standardMaterial.dispose();
+    geometries.add(mesh.geometry);
+    const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    meshMaterials.forEach((material) => {
+      materials.add(material);
+      Object.values(material).forEach((value) => {
+        if (value instanceof Texture) textures.add(value);
+      });
     });
   });
+
+  geometries.forEach((geometry) => geometry.dispose());
+  materials.forEach((material) => material.dispose());
+  textures.forEach((texture) => texture.dispose());
 }
 
 export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
@@ -125,8 +150,9 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
 
     let disposed = false;
     let frame = 0;
-    let loadedModel: Group | null = null;
     let lastProgress = -1;
+    let hasFallbackSurface = false;
+    const surfaces: ParchmentSurface[] = [];
     const scene = new Scene();
     const camera = new PerspectiveCamera(32, 1, 0.1, 100);
     camera.position.set(0, 5.3, 9.6);
@@ -135,7 +161,7 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.12;
+    renderer.toneMappingExposure = 1.08;
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFSoftShadowMap;
@@ -143,10 +169,10 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
     const world = new Group();
     scene.add(world);
 
-    const ambient = new AmbientLight('#fff1d8', 1.18);
+    const ambient = new AmbientLight('#fff1d8', 1.14);
     scene.add(ambient);
 
-    const keyLight = new DirectionalLight('#fff2da', 2.1);
+    const keyLight = new DirectionalLight('#fff2da', 2.05);
     keyLight.position.set(-3.5, 8.5, 5);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(1024, 1024);
@@ -158,8 +184,8 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
     scene.add(keyLight);
 
     const torchLights = [
-      new PointLight('#cba96e', 24, 11, 1.8),
-      new PointLight('#cba96e', 20, 10, 1.8),
+      new PointLight('#cba96e', 22, 11, 1.8),
+      new PointLight('#cba96e', 19, 10, 1.8),
     ];
     torchLights[0].position.set(-3.75, 2.25, 0.7);
     torchLights[1].position.set(3.75, 2.25, -0.65);
@@ -186,6 +212,7 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
       roughness: 0.42,
     });
     const tabletopY = 0.48;
+    const parchmentBaseY = tabletopY + MAP_SURFACE_Y;
 
     const stoneBase = new Mesh(new BoxGeometry(8.45, 0.24, 4.55), stoneMaterial);
     stoneBase.position.y = 0.29;
@@ -270,67 +297,153 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
     parchmentTexture.colorSpace = SRGBColorSpace;
     parchmentTexture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 
-    const sheetWidth = 5.45;
-    const sheetDepth = 2.75;
-    const paperGeometry = new PlaneGeometry(sheetWidth, sheetDepth, 72, 28);
-    const paperPositions = new Float32Array(paperGeometry.attributes.position.array);
-    const paperMaterial = new MeshStandardMaterial({
-      map: parchmentTexture,
-      color: '#f6dfb4',
-      roughness: 0.98,
-      metalness: 0,
-      side: DoubleSide,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    });
-    const paper = new Mesh(paperGeometry, paperMaterial);
-    paper.rotation.x = -Math.PI / 2;
-    paper.position.set(0, tabletopY + 0.145, 0);
-    paper.receiveShadow = true;
-    paper.renderOrder = 2;
-    world.add(paper);
-
-    const rollGeometry = new CylinderGeometry(0.12, 0.12, sheetDepth + 0.06, 24, 1, true);
-    const rollMaterial = new MeshStandardMaterial({
+    // This textured roll is only a brief loading stand-in; once the GLB is ready,
+    // its own vertices and texture drive both the sealed and revealed states.
+    const placeholderMaterial = new MeshStandardMaterial({
       color: '#b68a55',
-      roughness: 0.84,
+      roughness: 0.9,
       map: parchmentTexture,
     });
-    const rolls: Mesh[] = [];
-    for (const direction of [-1, 1]) {
-      const roll = new Mesh(rollGeometry, rollMaterial);
-      roll.rotation.x = Math.PI / 2;
-      roll.position.set(direction * 0.18, tabletopY + 0.19, 0);
-      roll.castShadow = true;
-      roll.visible = false;
-      world.add(roll);
-      rolls.push(roll);
-    }
-
-    const scrollRings: Mesh[] = [];
-    for (const z of [-0.75, 0.75]) {
-      const ring = new Mesh(new TorusGeometry(0.17, 0.025, 8, 24), brassMaterial);
-      ring.position.set(0, tabletopY + 0.19, z);
-      ring.visible = true;
-      world.add(ring);
-      scrollRings.push(ring);
-    }
-
     const closedScroll = new Mesh(
-      new CylinderGeometry(0.19, 0.19, sheetDepth + 0.04, 32, 1, true),
-      rollMaterial,
+      new CylinderGeometry(ROLL_OUTER_RADIUS, ROLL_OUTER_RADIUS, MAP_DEPTH + 0.06, 40, 2),
+      placeholderMaterial,
     );
     closedScroll.rotation.x = Math.PI / 2;
-    closedScroll.position.set(0, tabletopY + 0.19, 0);
+    closedScroll.position.set(0, parchmentBaseY + ROLL_OUTER_RADIUS, 0);
     closedScroll.castShadow = true;
-    closedScroll.visible = true;
+    closedScroll.receiveShadow = true;
     world.add(closedScroll);
 
-    const modelHolder = new Group();
-    modelHolder.scale.x = 0.14;
-    world.add(modelHolder);
-    const modelMaterials: MeshStandardMaterial[] = [];
+    const rollCoreMaterial = new MeshStandardMaterial({
+      color: '#4a2c19',
+      roughness: 0.82,
+      transparent: true,
+      opacity: 1,
+    });
+    const rollCore = new Mesh(
+      new CylinderGeometry(
+        ROLL_INNER_RADIUS * 0.78,
+        ROLL_INNER_RADIUS * 0.78,
+        MAP_DEPTH + 0.16,
+        24,
+      ),
+      rollCoreMaterial,
+    );
+    rollCore.rotation.x = Math.PI / 2;
+    rollCore.position.set(0, parchmentBaseY + ROLL_INNER_RADIUS, 0);
+    rollCore.castShadow = true;
+    world.add(rollCore);
+
+    const rollBandMaterial = new MeshStandardMaterial({
+      color: '#b38b4d',
+      metalness: 0.6,
+      roughness: 0.42,
+      transparent: true,
+      opacity: 1,
+    });
+    const rollBands: Mesh[] = [];
+    for (const z of [-MAP_DEPTH / 2 - 0.035, MAP_DEPTH / 2 + 0.035]) {
+      const band = new Mesh(
+        new TorusGeometry(ROLL_OUTER_RADIUS + 0.005, 0.023, 8, 28),
+        rollBandMaterial,
+      );
+      band.position.set(0, parchmentBaseY + ROLL_OUTER_RADIUS, z);
+      band.castShadow = true;
+      world.add(band);
+      rollBands.push(band);
+    }
+
+    const syncRollDetails = (progress: number) => {
+      const opacity = 1 - MathUtils.smoothstep(progress, 0.015, 0.32);
+      rollCoreMaterial.opacity = opacity;
+      rollBandMaterial.opacity = opacity;
+      rollCore.visible = opacity > 0.01;
+      rollBands.forEach((band) => (band.visible = opacity > 0.01));
+    };
+
+    const registerSurface = (geometry: BufferGeometry, material: Material | Material[]) => {
+      const positions = geometry.attributes.position as BufferAttribute;
+      const openPositions = new Float32Array(positions.array);
+      const rolledPositions = new Float32Array(openPositions.length);
+      const vertexCount = positions.count;
+      const initialOpening = MathUtils.smoothstep(
+        MathUtils.clamp(motion.current.progress, 0, 1),
+        0.015,
+        0.98,
+      );
+
+      for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+        const index = vertex * 3;
+        const x = openPositions[index];
+        const y = openPositions[index + 1];
+        const z = openPositions[index + 2];
+        const u = MathUtils.clamp((x + MAP_WIDTH / 2) / MAP_WIDTH, 0, 1);
+        const angle = u * Math.PI * 2 * ROLL_TURNS;
+        const radius = MathUtils.lerp(ROLL_INNER_RADIUS, ROLL_OUTER_RADIUS, u);
+
+        // A true spiral cross-section makes the same textured GLB read as a rolled
+        // scroll at rest, then smoothly opens into its own naturally curled sheet.
+        rolledPositions[index] = radius * Math.sin(angle);
+        rolledPositions[index + 1] =
+          parchmentBaseY + radius * (1 - Math.cos(angle)) + (y - parchmentBaseY) * 0.08;
+        rolledPositions[index + 2] = z;
+
+        positions.array[index] = MathUtils.lerp(
+          rolledPositions[index],
+          openPositions[index],
+          initialOpening,
+        );
+        positions.array[index + 1] = MathUtils.lerp(
+          rolledPositions[index + 1],
+          openPositions[index + 1],
+          initialOpening,
+        );
+        positions.array[index + 2] = MathUtils.lerp(
+          rolledPositions[index + 2],
+          openPositions[index + 2],
+          initialOpening,
+        );
+      }
+      positions.needsUpdate = true;
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+
+      const surface = new Mesh(geometry, material);
+      surface.castShadow = true;
+      surface.receiveShadow = true;
+      surface.renderOrder = 2;
+      world.add(surface);
+      surfaces.push({ geometry, openPositions, rolledPositions });
+      closedScroll.visible = false;
+      syncRollDetails(MathUtils.clamp(motion.current.progress, 0, 1));
+    };
+
+    const addFallbackSurface = () => {
+      if (disposed || hasFallbackSurface) return;
+      hasFallbackSurface = true;
+
+      const geometry = new PlaneGeometry(MAP_WIDTH, MAP_DEPTH, 84, 38);
+      geometry.rotateX(-Math.PI / 2);
+      const positions = geometry.attributes.position as BufferAttribute;
+      for (let vertex = 0; vertex < positions.count; vertex += 1) {
+        const x = positions.getX(vertex);
+        const z = positions.getZ(vertex);
+        const edge = MathUtils.smoothstep(Math.abs(x) / (MAP_WIDTH / 2), 0.62, 0.98);
+        const ripple = Math.sin((z / MAP_DEPTH + 0.5) * Math.PI * 4) * 0.025;
+        positions.setY(vertex, parchmentBaseY + edge * (0.13 + ripple));
+      }
+      positions.needsUpdate = true;
+      geometry.computeVertexNormals();
+
+      const fallbackMaterial = new MeshStandardMaterial({
+        map: parchmentTexture,
+        color: '#f1dfbd',
+        roughness: 0.98,
+        side: DoubleSide,
+      });
+      registerSurface(geometry, fallbackMaterial);
+    };
+
     new GLTFLoader().load(
       '/models/old-map.glb',
       (gltf) => {
@@ -339,55 +452,74 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
           return;
         }
 
-        loadedModel = gltf.scene;
-        loadedModel.updateMatrixWorld(true);
-        const initialBounds = new Box3().setFromObject(loadedModel);
-        const initialSize = initialBounds.getSize(new Vector3());
-        const modelScale = 4.95 / Math.max(initialSize.x, initialSize.z);
-        loadedModel.scale.setScalar(modelScale);
-        loadedModel.updateMatrixWorld(true);
+        gltf.scene.updateMatrixWorld(true);
+        const bounds = new Box3().setFromObject(gltf.scene);
+        const size = bounds.getSize(new Vector3());
+        if (bounds.isEmpty() || Math.max(size.x, size.z) === 0) {
+          disposeObject(gltf.scene);
+          addFallbackSurface();
+          return;
+        }
 
-        const fittedBounds = new Box3().setFromObject(loadedModel);
-        const fittedCenter = fittedBounds.getCenter(new Vector3());
-        loadedModel.position.x -= fittedCenter.x;
-        loadedModel.position.y += tabletopY + 0.15 - fittedBounds.min.y;
-        loadedModel.position.z -= fittedCenter.z;
+        const center = bounds.getCenter(new Vector3());
+        const turnLongSide = size.z > size.x;
+        const modelScale = MAP_WIDTH / Math.max(size.x, size.z);
+        const sourceGeometries = new Set<BufferGeometry>();
+        const sourceMaterials = new Set<Material>();
 
-        loadedModel.traverse((object) => {
-          const mesh = object as Mesh;
-          if (!mesh.isMesh) return;
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          const sourceMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          const transparentMaterials = sourceMaterials.map((sourceMaterial) => {
-            const material = sourceMaterial.clone() as MeshStandardMaterial;
-            material.transparent = true;
-            material.opacity = 1;
-            modelMaterials.push(material);
+        gltf.scene.traverse((object) => {
+          const sourceMesh = object as Mesh;
+          if (!sourceMesh.isMesh) return;
+
+          sourceGeometries.add(sourceMesh.geometry);
+          const geometry = sourceMesh.geometry.clone();
+          geometry.applyMatrix4(sourceMesh.matrixWorld);
+          const positions = geometry.attributes.position as BufferAttribute;
+
+          for (let vertex = 0; vertex < positions.count; vertex += 1) {
+            const sourceX = positions.getX(vertex) - center.x;
+            const sourceY = positions.getY(vertex);
+            const sourceZ = positions.getZ(vertex) - center.z;
+            const x = (turnLongSide ? sourceZ : sourceX) * modelScale;
+            const z = (turnLongSide ? -sourceX : sourceZ) * modelScale;
+            const y = (sourceY - bounds.min.y) * modelScale + parchmentBaseY;
+            positions.setXYZ(vertex, x, y, z);
+          }
+          positions.needsUpdate = true;
+          geometry.computeVertexNormals();
+          geometry.computeBoundingSphere();
+
+          const sourceMeshMaterials = Array.isArray(sourceMesh.material)
+            ? sourceMesh.material
+            : [sourceMesh.material];
+          const mapMaterials = sourceMeshMaterials.map((sourceMaterial) => {
+            sourceMaterials.add(sourceMaterial);
+            const material = sourceMaterial.clone();
+            material.side = DoubleSide;
+            material.transparent = false;
+            material.depthWrite = true;
+            if (material instanceof MeshStandardMaterial) {
+              material.roughness = 0.96;
+              material.metalness = 0;
+              material.color.set('#fff6e2');
+            }
             return material;
           });
-          mesh.material = Array.isArray(mesh.material)
-            ? transparentMaterials
-            : transparentMaterials[0];
+
+          registerSurface(
+            geometry,
+            Array.isArray(sourceMesh.material) ? mapMaterials : mapMaterials[0],
+          );
         });
-        const currentProgress = MathUtils.clamp(motion.current.progress, 0, 1);
-        const currentOpacity = 1 - MathUtils.smoothstep(currentProgress, 0.08, 0.48);
-        modelHolder.visible = currentOpacity > 0.015;
-        modelMaterials.forEach((material) => {
-          material.opacity = currentOpacity;
-          material.depthWrite = currentOpacity > 0.95;
-        });
-        modelHolder.scale.x = 0.14 + 0.86 * MathUtils.smoothstep(currentProgress, 0.02, 0.72);
-        closedScroll.visible = false;
-        scrollRings.forEach((ring) => (ring.visible = false));
-        modelHolder.add(loadedModel);
+
+        sourceGeometries.forEach((geometry) => geometry.dispose());
+        sourceMaterials.forEach((material) => material.dispose());
+
+        if (surfaces.length === 0) addFallbackSurface();
+        closedScroll.visible = surfaces.length === 0;
       },
       undefined,
-      () => {
-        const currentProgress = MathUtils.clamp(motion.current.progress, 0, 1);
-        closedScroll.visible = currentProgress < 0.12;
-        scrollRings.forEach((ring) => (ring.visible = currentProgress < 0.12));
-      },
+      () => addFallbackSurface(),
     );
 
     const cameraTarget = new Vector3(0, tabletopY + 0.04, 0);
@@ -428,47 +560,33 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
 
       const progress = MathUtils.clamp(motion.current.progress, 0, 1);
       if (Math.abs(progress - lastProgress) > 0.0004) {
-        const widthScale = 0.035 + 0.965 * progress;
-        const opening = MathUtils.smoothstep(progress, 0.04, 0.56);
-        const positions = paperGeometry.attributes.position as BufferAttribute;
-        const halfWidth = sheetWidth / 2;
-        const halfDepth = sheetDepth / 2;
-        for (let vertex = 0; vertex < positions.count; vertex += 1) {
-          const index = vertex * 3;
-          const originalX = paperPositions[index];
-          const originalY = paperPositions[index + 1];
-          const normalizedX = originalX / halfWidth;
-          const normalizedY = originalY / halfDepth;
-          const outerCurl =
-            Math.pow(Math.max(0, (Math.abs(normalizedX) - 0.7) / 0.3), 1.7) * (1 - opening) * 0.27;
-          const softRipple =
-            Math.sin((normalizedY + 0.42) * 8.5 + progress * 5.2) * (1 - opening) * 0.025;
-          positions.setXYZ(vertex, originalX * widthScale, originalY, outerCurl + softRipple);
-        }
-        positions.needsUpdate = true;
-        paperGeometry.computeVertexNormals();
-        paperMaterial.opacity = opening;
-
-        const modelOpacity = 1 - MathUtils.smoothstep(progress, 0.08, 0.48);
-        modelHolder.scale.x = 0.14 + 0.86 * MathUtils.smoothstep(progress, 0.02, 0.72);
-        modelHolder.visible = modelOpacity > 0.015;
-        modelMaterials.forEach((material) => {
-          material.opacity = modelOpacity;
-          material.depthWrite = modelOpacity > 0.95;
+        const opening = MathUtils.smoothstep(progress, 0.015, 0.98);
+        surfaces.forEach(({ geometry, openPositions, rolledPositions }) => {
+          const positions = geometry.attributes.position as BufferAttribute;
+          for (let index = 0; index < openPositions.length; index += 3) {
+            positions.array[index] = MathUtils.lerp(
+              rolledPositions[index],
+              openPositions[index],
+              opening,
+            );
+            positions.array[index + 1] = MathUtils.lerp(
+              rolledPositions[index + 1],
+              openPositions[index + 1],
+              opening,
+            );
+            positions.array[index + 2] = MathUtils.lerp(
+              rolledPositions[index + 2],
+              openPositions[index + 2],
+              opening,
+            );
+          }
+          positions.needsUpdate = true;
+          geometry.computeVertexNormals();
+          geometry.computeBoundingSphere();
         });
 
-        const rollSpread = (sheetWidth / 2 - 0.12) * progress;
-        rolls.forEach((roll, index) => {
-          const direction = index === 0 ? -1 : 1;
-          roll.visible = progress > 0.015 && progress < 0.98;
-          roll.position.x = direction * rollSpread;
-          roll.position.y = tabletopY + 0.19 + (1 - progress) * 0.05;
-          roll.scale.setScalar(0.35 + 0.65 * (1 - progress));
-        });
-        closedScroll.visible = progress < 0.12 && modelMaterials.length === 0;
-        scrollRings.forEach((ring) => {
-          ring.visible = progress < 0.12 && modelMaterials.length === 0;
-        });
+        syncRollDetails(progress);
+        closedScroll.visible = surfaces.length === 0 && progress < 0.12;
         lastProgress = progress;
       }
 
@@ -481,7 +599,7 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
         const flicker = Math.sin(elapsed * (6.7 + index) + index * 1.8) * 0.035;
         flame.scale.y = 1.25 + flicker;
         torchLights[index].intensity =
-          (index === 0 ? 24 : 20) + Math.sin(elapsed * 7 + index) * 1.1;
+          (index === 0 ? 22 : 19) + Math.sin(elapsed * 7 + index) * 1.1;
       });
 
       controls.update();
@@ -517,8 +635,6 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
       resizeObserver.disconnect();
       controls.dispose();
       disposeObject(world);
-      parchmentTexture.dispose();
-      woodTexture?.dispose();
       renderer.dispose();
     };
   }, [motion, onFailure]);
