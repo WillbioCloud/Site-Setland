@@ -33,6 +33,7 @@ export function Footer() {
           <div className="footer-column">
             <h2>Sua visita</h2>
             <Link to="/#visita">Planeje sua aventura</Link>
+            <Link to="/#localizacao">Mapa interativo</Link>
             <Link to="/#duvidas">Dúvidas frequentes</Link>
             <a href={MAP_URL} target="_blank" rel="noreferrer">
               Como chegar <ArrowUpRight size={13} aria-hidden="true" />

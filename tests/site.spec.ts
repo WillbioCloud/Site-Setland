@@ -42,7 +42,7 @@ test('hero uses the requested video, real poster and respects reduced motion', a
     })),
   ).toEqual({ loop: true, muted: true, inline: true, paused: true, autoplay: false });
   await expect(page.locator('.hero__poster')).toBeVisible();
-  await expect(page.locator('canvas, iframe')).toHaveCount(0);
+  await expect(page.locator('.hero iframe')).toHaveCount(0);
   await page.getByRole('button', { name: 'Reproduzir vídeo de fundo' }).click();
   await expect(video).toHaveCount(0);
   await expect(page.locator('.hero__poster')).toBeVisible();
@@ -107,7 +107,7 @@ test('attraction filters retain all six attractions and useful details', async (
   await expect(page.locator('.attraction-card')).toHaveCount(6);
 });
 
-test('theme preferences persist through reloads and both routes without a 3D embed', async ({
+test('theme preferences persist through reloads without disturbing the interactive location section', async ({
   page,
 }) => {
   await home(page);
@@ -122,7 +122,7 @@ test('theme preferences persist through reloads and both routes without a 3D emb
       .getByRole('button', { name: new RegExp(label) })
       .click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', value);
-    await expect(page.locator('canvas, iframe')).toHaveCount(0);
+    await expect(page.locator('#localizacao')).toHaveCount(1);
   }
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'futuristic');
@@ -135,6 +135,57 @@ test('theme preferences persist through reloads and both routes without a 3D emb
     .getByRole('button', { name: 'Atmosfera original' })
     .click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'default');
+});
+
+test('location parchment reveals the Setland map and offers a reduced-motion fallback', async ({
+  page,
+  isMobile,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await home(page);
+  const section = page.locator('#localizacao');
+  await section.scrollIntoViewIfNeeded();
+  const stage = section.locator('.interactive-map__stage');
+  const mapFrame = stage.locator('iframe');
+
+  const alreadyStatic = await stage.evaluate((element) =>
+    element.classList.contains('interactive-map__stage--fallback'),
+  );
+  if (isMobile) {
+    await stage.tap();
+    await expect(mapFrame).toBeVisible();
+  } else if (!alreadyStatic) {
+    await stage.hover();
+    await expect(mapFrame).toHaveAttribute(
+      'src',
+      'https://maps.google.com/?q=Setland+Parque+Tematico+Caldas+Novas+GO&output=embed',
+    );
+    await expect(mapFrame).toBeVisible();
+
+    const fellBackDuringLoad = await stage.evaluate((element) =>
+      element.classList.contains('interactive-map__stage--fallback'),
+    );
+    if (!fellBackDuringLoad) {
+      const pinButton = section.getByRole('button', { name: 'Manter o mapa aberto' });
+      await pinButton.focus();
+      await page.keyboard.press('Enter');
+      await expect(section.getByRole('button', { name: 'Soltar o pergaminho' })).toBeFocused();
+      await page.mouse.move(2, 2);
+      await expect(mapFrame).toBeVisible();
+      await page.keyboard.press('Enter');
+      await expect(mapFrame).toHaveCount(0);
+    }
+  }
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(stage).toHaveClass(/interactive-map__stage--fallback/);
+  await expect(stage.locator('canvas')).toHaveCount(0);
+  await expect(mapFrame).toHaveAttribute(
+    'src',
+    'https://maps.google.com/?q=Setland+Parque+Tematico+Caldas+Novas+GO&output=embed',
+  );
+  await expect(mapFrame).toBeVisible();
+  await expect(section.getByRole('link', { name: /Abrir rotas no Google Maps/ })).toBeVisible();
 });
 
 test('FAQ works with mouse, keyboard and announced expanded states', async ({ page }) => {
