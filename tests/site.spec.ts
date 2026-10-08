@@ -141,7 +141,13 @@ test('location parchment reveals the Setland map and offers a reduced-motion fal
   page,
   isMobile,
 }) => {
+  // The 3D reveal/close animations are heavy under software rendering, so this
+  // test gets extra time when the suite runs tests in parallel.
+  test.slow();
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  // The shared fixed clock freezes Date.now, which stalls the GSAP reveal/close
+  // tweens; restore a flowing system time so the animations can complete.
+  await page.clock.setSystemTime(new Date('2026-10-07T15:00:00Z'));
   await home(page);
   const section = page.locator('#localizacao');
   await section.scrollIntoViewIfNeeded();
@@ -152,15 +158,25 @@ test('location parchment reveals the Setland map and offers a reduced-motion fal
     element.classList.contains('interactive-map__stage--fallback'),
   );
   if (isMobile) {
-    await stage.tap();
-    await expect(mapFrame).toBeVisible();
+    // Touch devices reveal the map by themselves once the parchment enters the screen.
+    await stage.scrollIntoViewIfNeeded();
+    await expect(mapFrame).toBeVisible({ timeout: 15000 });
+    const autoRevealed = await stage.evaluate(
+      (element) => !element.classList.contains('interactive-map__stage--fallback'),
+    );
+    if (autoRevealed) {
+      const releaseButton = section.getByRole('button', { name: 'Soltar o pergaminho' });
+      await expect(releaseButton).toBeVisible();
+      await releaseButton.tap();
+      await expect(mapFrame).toHaveCount(0, { timeout: 15000 });
+    }
   } else if (!alreadyStatic) {
     await stage.hover();
     await expect(mapFrame).toHaveAttribute(
       'src',
       'https://maps.google.com/?q=Setland+Parque+Tematico+Caldas+Novas+GO&output=embed',
     );
-    await expect(mapFrame).toBeVisible();
+    await expect(mapFrame).toBeVisible({ timeout: 15000 });
 
     const fellBackDuringLoad = await stage.evaluate((element) =>
       element.classList.contains('interactive-map__stage--fallback'),
@@ -173,7 +189,7 @@ test('location parchment reveals the Setland map and offers a reduced-motion fal
       await page.mouse.move(2, 2);
       await expect(mapFrame).toBeVisible();
       await page.keyboard.press('Enter');
-      await expect(mapFrame).toHaveCount(0);
+      await expect(mapFrame).toHaveCount(0, { timeout: 15000 });
     }
   }
 

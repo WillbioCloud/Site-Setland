@@ -32,6 +32,8 @@ export function InteractiveMapSection() {
   const [isPinned, setIsPinned] = useState(false);
   const [mapMounted, setMapMounted] = useState(false);
   const mapWindowRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const hasAutoOpenedRef = useRef(false);
   const sceneMotion = useRef<SceneMotion>({ progress: 0, tiltX: 0, tiltY: 0 });
   const isFallback = reducedMotion || webglFailed;
   const isOpen = isFallback || isPinned || isHovered;
@@ -64,7 +66,7 @@ export function InteractiveMapSection() {
     } else {
       timeline.to(
         mapWindow,
-        { autoAlpha: 0, scale: 0.96, y: 12, duration: 0.24, ease: 'power2.in' },
+        { autoAlpha: 0, scale: 0.96, y: 12, duration: 0.45, ease: 'power2.inOut' },
         0,
       );
       timeline.to(sceneMotion.current, { progress: 0, duration: 1.16, ease: 'power3.inOut' }, 0.16);
@@ -75,6 +77,30 @@ export function InteractiveMapSection() {
       timeline.kill();
     };
   }, [isFallback, isOpen]);
+
+  // Touch devices have no hover reveal: open the parchment automatically the
+  // first time it scrolls into view, and let the visitor release it afterwards.
+  useEffect(() => {
+    if (isFallback) return;
+    const stage = stageRef.current;
+    if (!stage || typeof IntersectionObserver === 'undefined') return;
+    const isTouchDevice =
+      window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches;
+    if (!isTouchDevice) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting || hasAutoOpenedRef.current) return;
+        hasAutoOpenedRef.current = true;
+        setIsPinned(true);
+        observer.disconnect();
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [isFallback]);
 
   const updateTilt = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'touch') return;
@@ -192,6 +218,7 @@ export function InteractiveMapSection() {
           onPointerUp={handlePointerUp}
         >
           <div
+            ref={stageRef}
             className={`interactive-map__stage ${isFallback ? 'interactive-map__stage--fallback' : ''} ${isOpen ? 'interactive-map__stage--open' : ''}`}
             role="group"
             aria-label="Pergaminho interativo com a localização do Setland Park"
