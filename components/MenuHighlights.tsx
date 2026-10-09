@@ -1,6 +1,7 @@
 import { ArrowRight, UtensilsCrossed } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getMenuItemAnchor } from '../data/menuDisplay';
+import { FrostScratchOverlay } from './FrostScratchOverlay';
 import mignon from '../assets/mignon-parmegiana.webp';
 import entradas from '../assets/optimized/entradas.webp';
 
@@ -41,6 +42,7 @@ export function MenuHighlights() {
               width="770"
               height="514"
             />
+            <FrostScratchOverlay mode="card" />
             <div className="gastronomy-visual__caption">
               <UtensilsCrossed size={19} strokeWidth={1.4} aria-hidden="true" />
               <span>À mesa, novas histórias.</span>

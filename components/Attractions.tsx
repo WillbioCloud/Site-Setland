@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight, Ticket } from 'lucide-react';
 import { attractions, eras, type ParkAttraction } from '../data/park';
 import type { Attraction } from '../types';
 import { Button } from './Button';
+import { FrostScratchOverlay } from './FrostScratchOverlay';
 import { Modal } from './Modal';
 
 type Filter = 'all' | Attraction['category'];
@@ -73,6 +74,7 @@ export function Attractions({ onOpenTickets }: { onOpenTickets: () => void }) {
                     loading="lazy"
                     decoding="async"
                   />
+                  <FrostScratchOverlay mode="card" />
                   <span
                     className={`photo-badge ${attraction.era === 'glacial' ? 'photo-badge--ice' : ''}`}
                   >

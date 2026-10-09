@@ -1,0 +1,105 @@
+/*
+ * Frost layer rendered by components/FrostScratchOverlay.tsx.
+ *
+ * The canvas is decorative and never takes pointer events itself: the component listens on an
+ * ancestor, so card clicks and hero text keep working. Its stacking follows the layers around it,
+ * so frost always sits under the same gradients as the photo it covers.
+ */
+
+.frost-scratch {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Hero: above the shade and vignette, below the copy. Text stays legible on the dark abyssal base. */
+.frost-scratch--hero {
+  z-index: 1;
+}
+
+/* Era cards: between the photo and its gradient shade, so the copy keeps its contrast. */
+.era-card .frost-scratch {
+  z-index: -2;
+  filter: saturate(0.75);
+  transition:
+    transform 650ms ease,
+    filter 400ms ease;
+}
+
+.era-card:hover .frost-scratch {
+  transform: scale(1.04);
+  filter: saturate(0.95);
+}
+
+/* Attraction cards: mirror the photo's hover zoom and saturation so thawed areas line up. */
+.attraction-card__image .frost-scratch {
+  filter: saturate(0.8);
+  transition: transform 600ms ease;
+}
+
+.attraction-card:hover .attraction-card__image .frost-scratch {
+  transform: scale(1.035);
+}
+
+/* Hint shown over the hero until the visitor first thaws the frost. */
+.hero__frost-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 132px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 9px 16px;
+  border: 1px solid var(--theme-badge-border);
+  border-radius: 999px;
+  background: var(--theme-badge-bg);
+  color: var(--theme-badge-text);
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  line-height: 1.4;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition:
+    opacity 900ms ease,
+    transform 900ms ease;
+  animation: frost-hint-in 900ms ease 900ms backwards;
+}
+
+.hero__frost-hint svg {
+  flex-shrink: 0;
+  color: var(--theme-primary);
+}
+
+.hero__frost-hint.is-hidden {
+  opacity: 0;
+  transform: translate(-50%, 6px);
+}
+
+@keyframes frost-hint-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (max-width: 680px) {
+  .hero__frost-hint {
+    bottom: 124px;
+    white-space: normal;
+    text-align: center;
+    width: max-content;
+    max-width: calc(100% - 28px);
+  }
+}

@@ -14,10 +14,13 @@ import {
 import { Link } from 'react-router-dom';
 import { Button } from './Button';
 import { Modal } from './Modal';
+import { FrostScratchOverlay } from './FrostScratchOverlay';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from '../context/ThemeContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CASTLE_IMAGE, HERO_VIDEO_URL } from '../data/park';
+
+const FROST_HINT_TIMEOUT_MS = 12000;
 
 const copy = {
   default: {
@@ -55,7 +58,20 @@ export function Hero({ onOpenTickets }: { onOpenTickets: () => void }) {
   const [videoFailed, setVideoFailed] = useState(false);
   const [filmOpen, setFilmOpen] = useState(false);
   const [filmFailed, setFilmFailed] = useState(false);
+  const [frostHintHidden, setFrostHintHidden] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
   const content = copy[currentTheme];
+  const frostHintActive = currentTheme === 'glacial' && !reducedMotion;
+  const [coarsePointer] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches,
+  );
+
+  // The hint fades out after the first scratch, or after a short while if the visitor never touches it.
+  useEffect(() => {
+    if (!frostHintActive || frostHintHidden) return;
+    const timer = window.setTimeout(() => setFrostHintHidden(true), FROST_HINT_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [frostHintActive, frostHintHidden]);
 
   useEffect(() => {
     const element = video.current;
@@ -95,7 +111,7 @@ export function Hero({ onOpenTickets }: { onOpenTickets: () => void }) {
 
   return (
     <>
-      <section className="hero" id="hero" aria-label="Bem-vindo ao Setland">
+      <section ref={heroRef} className="hero" id="hero" aria-label="Bem-vindo ao Setland">
         <div className="hero__media" aria-hidden="true">
           <img
             src={CASTLE_IMAGE}
@@ -127,6 +143,11 @@ export function Hero({ onOpenTickets }: { onOpenTickets: () => void }) {
           )}
           <div className="hero__shade" />
           <div className="hero__vignette" />
+          <FrostScratchOverlay
+            mode="hero"
+            interactionRef={heroRef}
+            onFirstThaw={() => setFrostHintHidden(true)}
+          />
         </div>
         <div className="container hero__main">
           <div className="hero__copy" key={currentTheme}>
@@ -152,6 +173,14 @@ export function Hero({ onOpenTickets }: { onOpenTickets: () => void }) {
           </div>
           <ThemeSwitcher variant="hero" />
         </div>
+        {frostHintActive && (
+          <p className={`hero__frost-hint ${frostHintHidden ? 'is-hidden' : ''}`}>
+            <Snowflake size={15} strokeWidth={1.5} aria-hidden="true" />
+            {coarsePointer
+              ? 'Deslize de lado para descongelar a visão'
+              : 'Passe o mouse para descongelar a visão'}
+          </p>
+        )}
         <div className="container hero__bottom">
           <div className="hero__location">
             <MapPin size={19} strokeWidth={1.4} aria-hidden="true" />
