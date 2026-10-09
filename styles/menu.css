@@ -1,7 +1,7 @@
 /* The menu is a photographic, medieval collection; navigation and search stay familiar. */
 .menu-page {
   min-height: 100svh;
-  --menu-gold-border: rgb(203 169 110 / 20%);
+  --menu-gold-border: color-mix(in srgb, var(--theme-primary) 20%, transparent);
   --menu-scroll-offset: calc(var(--header-height) + 108px);
 }
 .menu-page-hero {
@@ -26,7 +26,7 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, var(--bg), rgb(12 10 9 / 35%) 70%),
+    linear-gradient(90deg, var(--bg), color-mix(in srgb, var(--theme-bg) 35%, transparent) 70%),
     linear-gradient(0deg, var(--bg), transparent 60%, rgb(10 8 6 / 50%));
 }
 .menu-page-hero__inner {
@@ -80,7 +80,7 @@
 }
 .menu-search:focus-within {
   border-color: var(--gold);
-  outline: 1px solid rgb(203 169 110 / 20%);
+  outline: 1px solid color-mix(in srgb, var(--theme-primary) 20%, transparent);
 }
 .menu-search > svg {
   color: var(--gold);
@@ -166,8 +166,8 @@
 }
 .menu-category-link.is-active {
   color: var(--gold-light);
-  background: rgb(203 169 110 / 6%);
-  border-color: rgb(203 169 110 / 30%);
+  background: color-mix(in srgb, var(--theme-primary) 6%, transparent);
+  border-color: color-mix(in srgb, var(--theme-primary) 30%, transparent);
 }
 .menu-back {
   margin-top: 27px;
@@ -234,17 +234,17 @@
   align-items: center;
   gap: 13px;
   margin-block: 24px;
-  color: #bfa06b;
+  color: var(--theme-ornament);
 }
 .menu-ornament > span {
   flex: 1;
   height: 1px;
-  background: rgb(203 169 110 / 18%);
+  background: color-mix(in srgb, var(--theme-primary) 18%, transparent);
 }
 .menu-ornament > i {
   width: 4px;
   height: 4px;
-  border: 1px solid rgb(203 169 110 / 55%);
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 55%, transparent);
   transform: rotate(45deg);
 }
 .menu-ornament > svg {
@@ -267,7 +267,11 @@
   border-radius: 12px;
   overflow: hidden;
   background-color: rgb(23 23 23 / 80%);
-  background-image: linear-gradient(125deg, rgb(203 169 110 / 4%), transparent 58%);
+  background-image: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--theme-primary) 4%, transparent),
+    transparent 58%
+  );
   backdrop-filter: blur(12px);
   scroll-margin-top: var(--menu-scroll-offset);
   transition:
@@ -275,7 +279,7 @@
     transform 300ms ease;
 }
 .menu-item:hover {
-  border-color: rgb(203 169 110 / 60%);
+  border-color: color-mix(in srgb, var(--theme-primary) 60%, transparent);
   transform: translateY(-4px);
 }
 .menu-item__media {
@@ -326,12 +330,12 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border: 1px solid rgb(203 169 110 / 35%);
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 35%, transparent);
   border-radius: 4px;
   padding: 6px 9px;
   background: rgb(14 12 9 / 88%);
   backdrop-filter: blur(8px);
-  color: #ead29b;
+  color: var(--theme-primary-strong);
   font-size: 9px;
   letter-spacing: 0.4px;
   font-weight: 500;
@@ -389,7 +393,7 @@
   gap: 14px;
   padding-top: 18px;
   margin-top: auto;
-  border-top: 1px solid rgb(203 169 110 / 16%);
+  border-top: 1px solid color-mix(in srgb, var(--theme-primary) 16%, transparent);
 }
 .menu-item__price-block {
   display: flex;
@@ -403,7 +407,7 @@
   line-height: 1.6;
 }
 .menu-item__price {
-  color: #cba96e;
+  color: var(--theme-primary);
   white-space: nowrap;
   font-family: 'Cinzel', Georgia, serif;
   font-size: 24px;
@@ -458,7 +462,7 @@
   margin: 0;
   padding: 0 0 0 28px;
   border-top: 0;
-  border-left: 1px solid rgb(203 169 110 / 16%);
+  border-left: 1px solid color-mix(in srgb, var(--theme-primary) 16%, transparent);
 }
 .menu-items--single .menu-item__price {
   font-size: 28px;
@@ -519,7 +523,7 @@
     width: 100%;
     padding: 18px 0 0;
     border-left: 0;
-    border-top: 1px solid rgb(203 169 110 / 16%);
+    border-top: 1px solid color-mix(in srgb, var(--theme-primary) 16%, transparent);
   }
   .menu-items--single .menu-item__heading h3 {
     font-size: 29px;
@@ -574,7 +578,7 @@
   }
   .menu-page-hero__image::after {
     background:
-      linear-gradient(90deg, var(--bg), rgb(12 10 9 / 50%) 100%),
+      linear-gradient(90deg, var(--bg), color-mix(in srgb, var(--theme-bg) 50%, transparent) 100%),
       linear-gradient(0deg, var(--bg), transparent);
   }
   .menu-items--single .menu-item__media {

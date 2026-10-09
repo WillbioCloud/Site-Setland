@@ -24,10 +24,31 @@ npm run format:check  # Conferir a formatação
 
 - **`/`**: vídeo de abertura, três eras, seis atrações com filtros, gastronomia, informações de visita e FAQ.
 - **`/cardapio`**: as **21 categorias e 124 itens originais**, com preços preservados, cards fotográficos, busca sem distinção de acentos (incluindo temas e categorias), navegação por categoria e links diretos como `/cardapio#cat-pizzas`. Os destaques da home também levam diretamente ao item, por exemplo `/cardapio#item-pratos-file-mignon-a-parmegiana`.
-- **Temas**: atmosfera original, Glacial, Medieval e Futurística. A preferência é salva localmente; cores mudam de forma sutil, mantendo tipografia e hierarquia consistentes.
+- **Atmosferas**: original, Glacial, Medieval e Futurística, com cores, bordas, brilhos e efeitos próprios. Veja a seção [Atmosferas](#atmosferas).
 - **Ingressos**: planejador em etapas, contadores, validação de data e dados, revisão e cálculo de valores.
 - **Guia virtual**: informações locais úteis mesmo sem serviço de IA configurado.
 - **Acessibilidade**: modais nativos com foco contido e restaurado, Escape, navegação por teclado, estados anunciados e respeito a movimento reduzido.
+
+## Atmosferas
+
+A escolha da era vale para todo o site: home, cardápio, ingressos, mapa e rodapé. Ela é salva em `localStorage` (chave `setland:era`) e aplicada antes da primeira pintura, em `<html data-theme>`. Quando a visitante troca de atmosfera em uma aba, as outras abas abertas do mesmo navegador acompanham a mudança sem recarregar, via `BroadcastChannel` e o evento `storage`.
+
+Cada atmosfera define tokens `--theme-*` em `styles/theme.css`; os componentes usam esses tokens, então as cores não ficam espalhadas pelo código.
+
+| Atmosfera   | Efeitos                                                                                                                             |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Original    | Ouro e fundo carvão, sem efeitos adicionais.                                                                                        |
+| Glacial     | Geada raspável no hero e nos cards de atrações, eras e destaques da gastronomia; neve caindo; bordas e brilhos gélidos no cardápio. |
+| Medieval    | Brasas douradas subindo; molduras gravadas e brasões no cardápio.                                                                   |
+| Futurística | Grade holográfica de fundo, linhas de varredura no cabeçalho e cantoneiras HUD nos painéis do cardápio.                             |
+
+**Geada raspável** (`components/FrostScratchOverlay.tsx`): a geada se forma das bordas para o centro depois de alguns segundos visível, e o mouse (ou o dedo) descongela a imagem. Sem interação, ela volta a se formar após alguns segundos. Os cards só começam a congelar quando entram na tela. O canvas não captura cliques: os cards continuam abrindo seus detalhes.
+
+**Toque:** no hero e nos cards glaciais, a rolagem vertical continua sendo do navegador; apenas arrastes na horizontal descongelam a imagem.
+
+**Movimento reduzido:** nenhuma geada, neve, brasa, dica ou transição animada de cor. Os elementos estáticos (grade, linhas e cores) permanecem.
+
+**Limites conhecidos:** a cópia desfocada da geada usa a foto estática da cena, porque o vídeo do hero vem de outro domínio e não pode ser lido pelo canvas. Os pratos do cardápio não são congelados, para que as fotos continuem legíveis durante a consulta.
 
 ## Importante: ingressos em modo de simulação
 
@@ -69,7 +90,7 @@ npx playwright install --with-deps chromium
 npm test
 ```
 
-A suíte executa cenários em desktop e mobile: vídeo/fallback, temas, modais, filtros, navegação, cardápio, formulários, simulação de ingressos e checagens automatizadas WCAG AA com axe. O vídeo externo é interceptado nos testes para validar o fallback de forma determinística.
+A suíte executa cenários em desktop e mobile: vídeo/fallback, temas, modais, filtros, navegação, cardápio, formulários, simulação de ingressos, geada e atmosferas (`tests/atmosphere.spec.ts`: sincronização entre abas, leitura de pixels da geada, toque, movimento reduzido) e checagens automatizadas WCAG AA com axe em todas as atmosferas. O vídeo externo é interceptado nos testes para validar o fallback de forma determinística.
 
 Para usar um Chromium já instalado:
 
@@ -84,7 +105,9 @@ Relatórios, traces e screenshots de teste são ignorados pelo Git. Testes autom
 ```text
 components/        Componentes de interface e fluxos
 components/menu/   Cards fotográficos e capítulos do cardápio
-context/           Preferência de atmosfera
+components/FrostScratchOverlay.tsx  Geada raspável (hero e cards glaciais)
+components/ThemeAtmosphere.tsx      Neve e brasas em tela cheia
+context/           Preferência de atmosfera e sincronização entre abas
 hooks/             Preferência de movimento reduzido
 pages/             Home e cardápio
 services/          Adaptador do guia virtual
@@ -94,6 +117,8 @@ assets/optimized/  Derivados WebP usados na interface
 assets/menu/       Fotografias locais e registro das origens
 styles.css         Tokens, componentes visuais e breakpoints
 styles/menu.css    Estilos e breakpoints exclusivos do cardápio
+styles/theme.css   Tokens de cada atmosfera e identidade visual por era
+styles/frost.css   Camada de geada e dica do hero
 ```
 
 Os horários, preços e condições foram mantidos a partir do conteúdo existente: confirme-os com o parque antes de publicar. Altere `data/visit.ts`, `data/menu.ts`, `data/park.ts` e as respostas locais em `services/geminiService.ts` quando necessário.

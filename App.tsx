@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { TicketModal } from './components/TicketModal';
 import { GeminiAssistant } from './components/GeminiAssistant';
+import { ThemeAtmosphere } from './components/ThemeAtmosphere';
 import { ThemeProvider } from './context/ThemeContext';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { Home } from './pages/Home';
@@ -87,6 +88,7 @@ function AppContent() {
         <Footer />
         <TicketModal isOpen={ticketOpen} onClose={() => setTicketOpen(false)} />
         <GeminiAssistant onOpenTickets={openTickets} />
+        <ThemeAtmosphere />
       </div>
     </BrowserRouter>
   );

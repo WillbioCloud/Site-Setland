@@ -5,6 +5,8 @@ import '@fontsource/inter/latin-500.css';
 import '@fontsource/inter/latin-600.css';
 import '@fontsource/cinzel/latin-400.css';
 import './styles.css';
+import './styles/theme.css';
+import './styles/frost.css';
 import App from './App';
 
 const rootElement = document.getElementById('root');

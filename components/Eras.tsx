@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight, Check, Ticket } from 'lucide-react';
 import { eras } from '../data/park';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from './Button';
+import { FrostScratchOverlay } from './FrostScratchOverlay';
 import { Modal } from './Modal';
 
 export function Eras({ onOpenTickets }: { onOpenTickets: () => void }) {
@@ -55,6 +56,7 @@ export function Eras({ onOpenTickets }: { onOpenTickets: () => void }) {
                   loading="lazy"
                   decoding="async"
                 />
+                <FrostScratchOverlay mode="card" />
                 <div className="era-card__shade" />
                 <div className="era-card__top">
                   <span>

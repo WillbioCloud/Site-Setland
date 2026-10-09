@@ -9,6 +9,24 @@
       content="Uma viagem além do tempo em Caldas Novas. Conheça as eras Glacial, Medieval e Futurística do Setland, explore as atrações e planeje sua visita."
     />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <script>
+      // Apply the saved atmosphere before first paint so a returning visitor never sees the default flash.
+      (function () {
+        try {
+          var era = localStorage.getItem('setland:era');
+          if (
+            era === 'glacial' ||
+            era === 'medieval' ||
+            era === 'futuristic' ||
+            era === 'default'
+          ) {
+            document.documentElement.dataset.theme = era;
+          }
+        } catch (error) {
+          /* Storage may be unavailable; ThemeProvider falls back to the default theme. */
+        }
+      })();
+    </script>
     <title>Setland — Uma viagem além do tempo</title>
   </head>
   <body>

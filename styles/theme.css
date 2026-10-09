@@ -1,0 +1,416 @@
+/*
+ * Atmosphere tokens and era skins.
+ *
+ * Each era swaps the --theme-* variables on <html data-theme>. Components read them through the
+ * aliases declared in styles.css (--bg, --gold, --era-accent, ...), so most surfaces follow the
+ * active era without per-component rules. Skins below only add what tokens cannot express:
+ * frost-glass edges, engraved frames, HUD corners and scanlines.
+ *
+ * Selectors are scoped under :root[data-theme] so they outrank the base rules regardless of the
+ * order in which the lazy-loaded menu stylesheet is injected.
+ */
+
+:root {
+  --theme-bg: #0c0a09;
+  --theme-surface: #171512;
+  --theme-surface-soft: #110f0d;
+  --theme-footer: #0a0908;
+  --theme-strip: #11100d;
+  --theme-text: #f4f1e9;
+  --theme-muted: #aaa49c;
+  --theme-subtle: #918b83;
+  --theme-primary: #cba96e;
+  --theme-primary-strong: #ead29b;
+  --theme-primary-soft: #e5d1aa;
+  --theme-accent: #d7b77e;
+  --theme-eyebrow: #dcc397;
+  --theme-eyebrow-soft: #b7a287;
+  --theme-on-primary: #0c0a09;
+  --theme-bubble: #cfb27f;
+  --theme-ornament: #bfa06b;
+  --theme-glow: rgb(203 169 110 / 22%);
+  --theme-line: rgb(203 169 110 / 40%);
+  --theme-line-soft: rgb(203 169 110 / 18%);
+  --theme-hairline: rgb(255 255 255 / 10%);
+  --theme-card-bg: rgb(23 23 23 / 60%);
+  --theme-card-border: rgb(255 255 255 / 10%);
+  --theme-card-border-hover: rgb(203 169 110 / 45%);
+  --theme-badge-bg: rgb(13 13 13 / 75%);
+  --theme-badge-border: rgb(255 255 255 / 17%);
+  --theme-badge-text: #f0e4ce;
+  --theme-header-bg: rgb(12 10 9 / 22%);
+}
+
+/* Glacial: abyssal blues, ice cyan and frost white. */
+:root[data-theme='glacial'] {
+  --theme-bg: #050e18;
+  --theme-surface: #0b1a27;
+  --theme-surface-soft: #081421;
+  --theme-footer: #040b13;
+  --theme-strip: #071320;
+  --theme-text: #e0f2fe;
+  --theme-muted: #a9c4d6;
+  --theme-subtle: #86a4b8;
+  --theme-primary: #38bdf8;
+  --theme-primary-strong: #7dd3fc;
+  --theme-primary-soft: #bae6fd;
+  --theme-accent: #bae6fd;
+  --theme-eyebrow: #7dd3fc;
+  --theme-eyebrow-soft: #8ccbe8;
+  --theme-on-primary: #04121c;
+  --theme-bubble: #bae6fd;
+  --theme-ornament: #7dd3fc;
+  --theme-glow: rgb(56 189 248 / 28%);
+  --theme-line: rgb(56 189 248 / 40%);
+  --theme-line-soft: rgb(125 211 252 / 20%);
+  --theme-hairline: rgb(125 211 252 / 12%);
+  --theme-card-bg: rgb(11 26 39 / 62%);
+  --theme-card-border: rgb(125 211 252 / 16%);
+  --theme-card-border-hover: rgb(56 189 248 / 55%);
+  --theme-badge-bg: rgb(5 14 24 / 78%);
+  --theme-badge-border: rgb(125 211 252 / 32%);
+  --theme-badge-text: #d4f1ff;
+  --theme-header-bg: rgb(5 14 24 / 28%);
+}
+
+/* Medieval: forge-black browns, torch amber and imperial gold. */
+:root[data-theme='medieval'] {
+  --theme-bg: #100c08;
+  --theme-surface: #1b1510;
+  --theme-surface-soft: #15100b;
+  --theme-footer: #0c0806;
+  --theme-strip: #140f0a;
+  --theme-text: #f6ecd6;
+  --theme-muted: #bfb097;
+  --theme-subtle: #9c8f78;
+  --theme-primary: #d4af37;
+  --theme-primary-strong: #f0d27a;
+  --theme-primary-soft: #efd98a;
+  --theme-accent: #f59e0b;
+  --theme-eyebrow: #e8c86a;
+  --theme-eyebrow-soft: #c9a86a;
+  --theme-on-primary: #1a1206;
+  --theme-bubble: #e4c35c;
+  --theme-ornament: #c9a227;
+  --theme-glow: rgb(212 175 55 / 26%);
+  --theme-line: rgb(212 175 55 / 42%);
+  --theme-line-soft: rgb(212 175 55 / 22%);
+  --theme-hairline: rgb(212 175 55 / 14%);
+  --theme-card-bg: rgb(27 21 16 / 68%);
+  --theme-card-border: rgb(212 175 55 / 22%);
+  --theme-card-border-hover: rgb(212 175 55 / 60%);
+  --theme-badge-bg: rgb(16 12 8 / 84%);
+  --theme-badge-border: rgb(212 175 55 / 40%);
+  --theme-badge-text: #f5dc86;
+  --theme-header-bg: rgb(16 12 8 / 26%);
+}
+
+/* Futuristic: near-black space, neon cyan and ultraviolet accents. */
+:root[data-theme='futuristic'] {
+  --theme-bg: #060810;
+  --theme-surface: #0c1119;
+  --theme-surface-soft: #080c14;
+  --theme-footer: #04060b;
+  --theme-strip: #0a0e17;
+  --theme-text: #e6fbff;
+  --theme-muted: #a3b6c6;
+  --theme-subtle: #8095a6;
+  --theme-primary: #00f0ff;
+  --theme-primary-strong: #7ffaff;
+  --theme-primary-soft: #a5fbff;
+  --theme-accent: #c084fc;
+  --theme-eyebrow: #5ff3ff;
+  --theme-eyebrow-soft: #8fd9e4;
+  --theme-on-primary: #02131a;
+  --theme-bubble: #7ff6ff;
+  --theme-ornament: #a855f7;
+  --theme-glow: rgb(0 240 255 / 26%);
+  --theme-line: rgb(0 240 255 / 38%);
+  --theme-line-soft: rgb(0 240 255 / 18%);
+  --theme-hairline: rgb(0 240 255 / 12%);
+  --theme-card-bg: rgb(12 17 25 / 70%);
+  --theme-card-border: rgb(0 240 255 / 18%);
+  --theme-card-border-hover: rgb(0 240 255 / 60%);
+  --theme-badge-bg: rgb(4 8 14 / 82%);
+  --theme-badge-border: rgb(0 240 255 / 42%);
+  --theme-badge-text: #c9fdff;
+  --theme-header-bg: rgb(6 8 16 / 30%);
+}
+
+/* Colour cross-fade when the visitor switches atmosphere. Only while motion is allowed. */
+@media (prefers-reduced-motion: no-preference) {
+  html.is-theme-switching,
+  html.is-theme-switching *,
+  html.is-theme-switching *::before,
+  html.is-theme-switching *::after {
+    transition:
+      background-color 600ms ease,
+      border-color 600ms ease,
+      color 600ms ease,
+      fill 600ms ease,
+      stroke 600ms ease,
+      box-shadow 600ms ease !important;
+  }
+}
+
+/* ─── Glacial ─────────────────────────────────────────────────────────────── */
+
+/* Snow falls behind the cards; re-blurring it every frame is costly, and the card fill is already translucent. */
+:root[data-theme='glacial'] .premium-card {
+  backdrop-filter: none;
+}
+
+:root[data-theme='glacial'] .hero h1 > span,
+:root[data-theme='glacial'] .text-gold {
+  text-shadow: 0 0 28px rgb(56 189 248 / 30%);
+}
+
+:root[data-theme='glacial'] .button--primary {
+  background: linear-gradient(180deg, #e0f2fe 0%, #7dd3fc 48%, #38bdf8 100%);
+  border-color: transparent;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 55%),
+    0 12px 30px -14px rgb(56 189 248 / 70%);
+}
+
+:root[data-theme='glacial'] .button--primary:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #bae6fd 48%, #7dd3fc 100%);
+  border-color: transparent;
+}
+
+:root[data-theme='glacial'] .premium-card,
+:root[data-theme='glacial'] .era-card,
+:root[data-theme='glacial'] .menu-item {
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgb(224 242 254 / 9%),
+    0 22px 50px -32px rgb(56 189 248 / 40%);
+}
+
+:root[data-theme='glacial'] .premium-card::before,
+:root[data-theme='glacial'] .era-card::before,
+:root[data-theme='glacial'] .menu-item::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(186 230 253 / 62%), transparent);
+  pointer-events: none;
+  z-index: 3;
+}
+
+:root[data-theme='glacial'] .era-card {
+  border-color: rgb(125 211 252 / 26%);
+}
+
+:root[data-theme='glacial'] .era-card:hover {
+  border-color: rgb(186 230 253 / 60%);
+}
+
+:root[data-theme='glacial'] .photo-badge {
+  backdrop-filter: blur(10px);
+}
+
+:root[data-theme='glacial'] .site-footer {
+  border-top-color: rgb(125 211 252 / 16%);
+}
+
+:root[data-theme='glacial'] .menu-category__header h2 {
+  text-shadow: 0 0 26px rgb(56 189 248 / 24%);
+}
+
+/* Touch: keep vertical scrolling; horizontal drags thaw the frost (see FrostScratchOverlay). */
+:root[data-theme='glacial'] .hero,
+:root[data-theme='glacial'] .attraction-card__image,
+:root[data-theme='glacial'] .era-card,
+:root[data-theme='glacial'] .gastronomy-visual__main {
+  touch-action: pan-y pinch-zoom;
+}
+
+/* ─── Medieval ────────────────────────────────────────────────────────────── */
+
+:root[data-theme='medieval'] .hero h1 > span {
+  text-shadow: 0 0 26px rgb(245 158 11 / 28%);
+}
+
+:root[data-theme='medieval'] .button--primary {
+  background: linear-gradient(180deg, #f3dd8a 0%, #d4af37 52%, #a8862a 100%);
+  border-color: #7a5d17;
+  text-shadow: 0 1px 0 rgb(255 240 190 / 40%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 220 / 50%),
+    inset 0 -2px 0 rgb(70 46 8 / 50%),
+    0 10px 24px -12px rgb(212 175 55 / 55%);
+}
+
+:root[data-theme='medieval'] .button--primary:hover {
+  background: linear-gradient(180deg, #fbe9a6 0%, #e7c04a 52%, #b8932f 100%);
+  border-color: #8a6a1d;
+}
+
+/* Heraldic crests: a shield before each dish badge and each menu category title. */
+:root[data-theme='medieval'] .menu-item__badge::before,
+:root[data-theme='medieval'] .menu-category__header h2::before {
+  content: '';
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 10px;
+  background: var(--theme-primary);
+  clip-path: polygon(0 0, 100% 0, 100% 56%, 50% 100%, 0 56%);
+}
+
+:root[data-theme='medieval'] .menu-category__header h2::before {
+  width: 11px;
+  height: 13px;
+  margin-right: 12px;
+  vertical-align: 0.08em;
+  background: linear-gradient(180deg, var(--theme-primary-strong), var(--theme-primary));
+}
+
+/* Engraved double frame, like a manuscript border. */
+:root[data-theme='medieval'] .premium-card,
+:root[data-theme='medieval'] .era-card,
+:root[data-theme='medieval'] .menu-item {
+  outline: 1px solid var(--theme-card-border);
+  outline-offset: 5px;
+}
+
+:root[data-theme='medieval'] .photo-badge {
+  color: var(--theme-badge-text);
+  letter-spacing: 0.6px;
+}
+
+:root[data-theme='medieval'] .site-header {
+  border-bottom-color: rgb(212 175 55 / 22%);
+}
+
+/* ─── Futuristic ──────────────────────────────────────────────────────────── */
+
+/* Static HUD grid behind the page; it does not move, so it stays on for reduced motion. */
+:root[data-theme='futuristic'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(0 240 255 / 4%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 240 255 / 4%) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, transparent 75%);
+}
+
+:root[data-theme='futuristic'] .hero h1 > span {
+  text-shadow: 0 0 26px rgb(168 85 247 / 38%);
+}
+
+:root[data-theme='futuristic'] .button--primary {
+  background: linear-gradient(100deg, #00f0ff 0%, #7ffaff 100%);
+  border-color: transparent;
+  box-shadow: 0 0 24px -6px rgb(0 240 255 / 70%);
+}
+
+:root[data-theme='futuristic'] .button--primary:hover {
+  background: linear-gradient(100deg, #7ffaff 0%, #ffffff 100%);
+  border-color: transparent;
+  box-shadow: 0 0 30px -4px rgb(0 240 255 / 85%);
+}
+
+/* HUD corner brackets on framed surfaces. */
+:root[data-theme='futuristic'] .premium-card,
+:root[data-theme='futuristic'] .era-card,
+:root[data-theme='futuristic'] .menu-item {
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgb(0 240 255 / 6%),
+    0 0 26px -10px rgb(0 240 255 / 45%);
+}
+
+:root[data-theme='futuristic'] .premium-card::before,
+:root[data-theme='futuristic'] .premium-card::after,
+:root[data-theme='futuristic'] .era-card::before,
+:root[data-theme='futuristic'] .era-card::after,
+:root[data-theme='futuristic'] .menu-item::before,
+:root[data-theme='futuristic'] .menu-item::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--theme-primary);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+:root[data-theme='futuristic'] .premium-card::before,
+:root[data-theme='futuristic'] .era-card::before,
+:root[data-theme='futuristic'] .menu-item::before {
+  top: 7px;
+  left: 7px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+:root[data-theme='futuristic'] .premium-card::after,
+:root[data-theme='futuristic'] .era-card::after,
+:root[data-theme='futuristic'] .menu-item::after {
+  right: 7px;
+  bottom: 7px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+:root[data-theme='futuristic'] .photo-badge {
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+}
+
+/* Chamfered neon badges and glowing category titles on the menu. */
+:root[data-theme='futuristic'] .menu-item__badge {
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  background:
+    linear-gradient(90deg, rgb(0 240 255 / 16%), rgb(168 85 247 / 12%)), rgb(4 8 14 / 82%);
+}
+
+:root[data-theme='futuristic'] .menu-category__header h2 {
+  text-shadow: 0 0 22px rgb(0 240 255 / 28%);
+}
+
+/* Scanlines across the header. */
+:root[data-theme='futuristic'] .site-header {
+  border-bottom-color: rgb(0 240 255 / 22%);
+}
+
+:root[data-theme='futuristic'] .site-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(0 240 255 / 4%) 0 1px, transparent 1px 3px);
+}
+
+:root[data-theme='futuristic'] .site-footer {
+  border-top-color: rgb(0 240 255 / 22%);
+}
+
+/* ─── Atmosphere canvas (snow / embers), mounted by ThemeAtmosphere ───────── */
+
+.theme-atmosphere {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 30;
+  animation: atmosphere-in 1200ms ease;
+}
+
+@keyframes atmosphere-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
