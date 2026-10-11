@@ -6,7 +6,8 @@ import { Footer } from './components/Footer';
 import { TicketModal } from './components/TicketModal';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { ThemeAtmosphere } from './components/ThemeAtmosphere';
-import { ThemeProvider } from './context/ThemeContext';
+import { MedievalMascotPeek } from './components/MedievalMascotPeek';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { Home } from './pages/Home';
 
@@ -59,6 +60,7 @@ function NotFound() {
 
 function AppContent() {
   const [ticketOpen, setTicketOpen] = useState(false);
+  const { currentTheme } = useTheme();
   const openTickets = () => setTicketOpen(true);
 
   return (
@@ -89,6 +91,7 @@ function AppContent() {
         <TicketModal isOpen={ticketOpen} onClose={() => setTicketOpen(false)} />
         <GeminiAssistant onOpenTickets={openTickets} />
         <ThemeAtmosphere />
+        <MedievalMascotPeek isActive={currentTheme === 'medieval'} />
       </div>
     </BrowserRouter>
   );
