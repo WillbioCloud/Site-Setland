@@ -1,222 +1,364 @@
-import React, { useEffect, useState, useRef, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, useAnimations } from '@react-three/drei';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { clone as cloneSkinnedScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Sparkles, X } from 'lucide-react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export interface MedievalMascotPeekProps {
-  /** Booleano indicando se o modo medieval foi ligado */
+  /** Booleano indicando se o modo medieval foi ligado. */
   isActive: boolean;
 }
 
-// 1. O Modelo 3D com rig, iluminação PBR e pose espiando (~85° inclinado da direita)
-function MascotModel() {
-  const gltf = useGLTF('/models/mascote.glb');
-  const { scene, animations } = gltf;
-  const modelRef = useRef<THREE.Group>(null);
-  const { actions, names } = useAnimations(animations, modelRef);
+const MASCOT_URL = '/models/mascote-com-rig-animado.glb';
+const GREETING_CLIP_NAME = 'ArmaçãoAction';
+const AUTO_DISMISS_MS = 8_500;
+const AFTER_HOVER_MS = 4_500;
+const EXIT_MS = 760;
+const ACTION_FADE_MS = 260;
 
-  // Mapeamento dos ossos do braço direito e cabeça caso o rig seja procedural
-  const rightForeArmRef = useRef<THREE.Bone | null>(null);
-  const rightArmRef = useRef<THREE.Bone | null>(null);
-  const headRef = useRef<THREE.Bone | null>(null);
+// The exported mesh is about 10 units tall. These offsets frame the upper body,
+// move the face into the page, and let the hip/outer arm fall beyond the right edge.
+const MODEL_POSITION: [number, number, number] = [1.55, -4.65, 0];
+const MODEL_ROTATION: [number, number, number] = [0, -0.5, 0.1];
+const MODEL_SCALE = 0.62;
 
-  // 1. Refinamento Matemático das Malhas, Normais e Shaders PBR
-  React.useLayoutEffect(() => {
-    scene.traverse((child) => {
-      // Identifica e captura ossos do rig para animação manual de tchauzinho
-      if ((child as THREE.Bone).isBone) {
-        const bone = child as THREE.Bone;
-        const name = bone.name.toLowerCase();
-        if (name.includes('forearm') && (name.includes('r') || name.includes('right'))) {
-          rightForeArmRef.current = bone;
-        } else if (name.includes('arm') && (name.includes('r') || name.includes('right'))) {
-          rightArmRef.current = bone;
-        } else if (name.includes('head')) {
-          headRef.current = bone;
-        }
-      }
+interface MascotModelProps {
+  isVisible: boolean;
+  reducedMotion: boolean;
+  onReady: () => void;
+}
 
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
+function MascotModel({ isVisible, reducedMotion, onReady }: MascotModelProps) {
+  const gltf = useGLTF(MASCOT_URL);
+  // SkeletonUtils.clone preserves the skinned mesh/bone relationship while allowing
+  // per-instance material tweaks without mutating drei's cached GLTF scene.
+  const scene = useMemo(() => cloneSkinnedScene(gltf.scene), [gltf.scene]);
+  const stageRef = useRef<THREE.Group>(null);
+  const invalidate = useThree((state) => state.invalidate);
+  const { actions } = useAnimations(gltf.animations, stageRef);
 
-        // Recalcula normais para suavizar o sombreamento e remover facetas poligonais
+  const greetingClip = useMemo(() => {
+    return (
+      gltf.animations.find((clip) => clip.name === GREETING_CLIP_NAME) ??
+      gltf.animations.find((clip) => /wave|waving|aceno|sauda/i.test(clip.name)) ??
+      (gltf.animations.length === 1 ? gltf.animations[0] : undefined)
+    );
+  }, [gltf.animations]);
+  const greetingAction = greetingClip ? actions[greetingClip.name] : undefined;
+
+  // Keep authored vertex normals when present. This GLB has them, plus a normal map;
+  // recomputing them on a skinned mesh would overwrite its authored smooth shading.
+  // Only generate normals for a mesh that genuinely has no normal attribute.
+  useLayoutEffect(() => {
+    const clonedMaterials: THREE.Material[] = [];
+    const originalMaterials: Array<{ mesh: THREE.Mesh; material: THREE.Mesh['material'] }> = [];
+
+    scene.traverse((object) => {
+      if (!(object as THREE.Mesh).isMesh) return;
+      const mesh = object as THREE.Mesh;
+      originalMaterials.push({ mesh, material: mesh.material });
+
+      if (!mesh.geometry.getAttribute('normal')) {
         mesh.geometry.computeVertexNormals();
-
-        if (mesh.material) {
-          const mat = mesh.material as THREE.MeshStandardMaterial;
-
-          // Acentua o relevo da pelagem no mapa normal
-          if (mat.normalScale) {
-            mat.normalScale.set(1.6, 1.6);
-          }
-
-          // Elimina o aspecto de plástico: pelo denso e feltro rústico com alta rugosidade
-          mat.roughness = Math.max(mat.roughness, 0.82);
-          mat.metalness = Math.min(mat.metalness, 0.15);
-          mat.needsUpdate = true;
-        }
       }
+
+      const refineMaterial = (source: THREE.Material) => {
+        const material = source.clone();
+        clonedMaterials.push(material);
+
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.roughness = Math.max(material.roughness, 0.82);
+          material.metalness = Math.min(material.metalness, 0.15);
+          if (material.normalMap) material.normalScale.set(1.6, 1.6);
+          material.needsUpdate = true;
+        }
+
+        return material;
+      };
+
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map(refineMaterial)
+        : refineMaterial(mesh.material);
     });
 
-    // Se o GLB já vier com clipe de animação gravado (Mixamo), toca imediatamente
-    if (names.length > 0 && actions[names[0]]) {
-      actions[names[0]]?.reset().fadeIn(0.3).play();
-    }
-  }, [scene, actions, names]);
+    return () => {
+      originalMaterials.forEach(({ mesh, material }) => {
+        mesh.material = material;
+      });
+      clonedMaterials.forEach((material) => material.dispose());
+    };
+  }, [scene]);
 
-  // 2. Animação em tempo real e pose espiando pela lateral (~85° inclinado da direita)
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
 
-    if (modelRef.current) {
-      // Pose inclinada: ~85 graus (1.48 radianos), tombado espiando da fresta direita
-      modelRef.current.rotation.z = -1.48 + Math.sin(t * 5) * 0.04;
-      // Frente voltada para a câmera com leve giro em direção ao centro da tela
-      modelRef.current.rotation.y = Math.PI - 0.35 + Math.cos(t * 3) * 0.03;
-      // Respiração / oscilação suave no eixo X e Y
-      modelRef.current.position.y = -0.45 + Math.sin(t * 3.5) * 0.015;
-      modelRef.current.position.x = 0.52 + Math.cos(t * 3.5) * 0.015;
+  useEffect(() => {
+    if (!greetingAction || !greetingClip) return;
+
+    if (!isVisible) {
+      greetingAction.fadeOut(ACTION_FADE_MS / 1000);
+      if (reducedMotion) {
+        greetingAction.stop();
+        invalidate();
+        return;
+      }
+      const stopTimer = window.setTimeout(() => greetingAction.stop(), ACTION_FADE_MS + 30);
+      return () => window.clearTimeout(stopTimer);
     }
 
-    // Tchauzinho procedural pelo osso do antebraço direito se não houver clipe embutido
-    if (rightForeArmRef.current && names.length === 0) {
-      rightForeArmRef.current.rotation.z = Math.sin(t * 9) * 0.45 + 0.3;
-      rightForeArmRef.current.rotation.x = Math.cos(t * 7) * 0.15;
+    greetingAction.stop();
+    greetingAction.reset();
+    greetingAction.enabled = true;
+    greetingAction.clampWhenFinished = true;
+    greetingAction.setLoop(THREE.LoopOnce, 1);
+    greetingAction.setEffectiveTimeScale(1);
+    greetingAction.setEffectiveWeight(1);
+
+    if (reducedMotion) {
+      // Respect reduced motion but preserve the raised, friendly end pose from Blender.
+      greetingAction.play();
+      greetingAction.time = greetingClip.duration;
+      greetingAction.paused = true;
+      invalidate();
+    } else {
+      greetingAction.fadeIn(0.32).play();
     }
-    if (rightArmRef.current && names.length === 0) {
-      rightArmRef.current.rotation.z = -0.85 + Math.sin(t * 4) * 0.08;
+
+    return () => greetingAction.fadeOut(0.16);
+  }, [greetingAction, greetingClip, invalidate, isVisible, reducedMotion]);
+
+  useFrame(({ clock }) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    if (!isVisible || reducedMotion) {
+      stage.position.set(...MODEL_POSITION);
+      stage.rotation.set(...MODEL_ROTATION);
+      return;
     }
-    if (headRef.current && names.length === 0) {
-      // Cabeça compensa a inclinação do corpo para olhar diretamente para o visitante
-      headRef.current.rotation.z = 0.55 + Math.sin(t * 4) * 0.04;
-    }
+
+    const time = clock.getElapsedTime();
+    // A tiny whole-body breath; the arm motion itself comes from the authored GLB clip.
+    stage.position.set(MODEL_POSITION[0], MODEL_POSITION[1] + Math.sin(time * 1.8) * 0.012, 0);
+    stage.rotation.set(
+      MODEL_ROTATION[0],
+      MODEL_ROTATION[1],
+      MODEL_ROTATION[2] + Math.sin(time * 1.25) * 0.008,
+    );
   });
 
   return (
-    <primitive
-      ref={modelRef}
-      object={scene}
-      // Escala focada no torso superior e cabeça
-      scale={2.1}
-      // X = 0.52 empurra o braço esquerdo e a cintura para fora do canvas (lado direito escondido)
-      position={[0.52, -0.45, 0]}
-    />
+    <group ref={stageRef} position={MODEL_POSITION} rotation={MODEL_ROTATION} scale={MODEL_SCALE}>
+      <primitive object={scene} />
+    </group>
   );
 }
 
-// Pré-carrega o modelo na memória para aparecer instantaneamente sem delay
-useGLTF.preload('/models/mascote.glb');
-
-// 2. Componente de Casca (Controla a entrada da direita, permanência e saída)
 export function MedievalMascotPeek({ isActive }: MedievalMascotPeekProps) {
+  const reducedMotion = useReducedMotion();
   const [shouldRender, setShouldRender] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const isHoveredRef = useRef(false);
-  const exitTimerRef = useRef<number | undefined>(undefined);
+
+  const isActiveRef = useRef(isActive);
+  const isModelReadyRef = useRef(false);
+  const dismissedRef = useRef(false);
+  const dismissedByUserRef = useRef(false);
+  const pointerInsideRef = useRef(false);
+  const focusInsideRef = useRef(false);
+  const dismissTimerRef = useRef<number | undefined>(undefined);
   const unmountTimerRef = useRef<number | undefined>(undefined);
 
-  const startDismissTimers = (durationMs = 8000) => {
-    window.clearTimeout(exitTimerRef.current);
-    window.clearTimeout(unmountTimerRef.current);
+  const clearDismissTimer = useCallback(() => {
+    if (dismissTimerRef.current !== undefined) window.clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = undefined;
+  }, []);
 
-    exitTimerRef.current = window.setTimeout(() => {
-      if (!isHoveredRef.current) {
-        setIsVisible(false);
-      }
-    }, durationMs);
+  const clearUnmountTimer = useCallback(() => {
+    if (unmountTimerRef.current !== undefined) window.clearTimeout(unmountTimerRef.current);
+    unmountTimerRef.current = undefined;
+  }, []);
 
-    unmountTimerRef.current = window.setTimeout(() => {
-      if (!isHoveredRef.current) {
+  const dismissPeek = useCallback(
+    (byUser = false) => {
+      dismissedRef.current = true;
+      dismissedByUserRef.current = byUser;
+      pointerInsideRef.current = false;
+      focusInsideRef.current = false;
+      clearDismissTimer();
+      clearUnmountTimer();
+      setIsVisible(false);
+      unmountTimerRef.current = window.setTimeout(() => {
+        unmountTimerRef.current = undefined;
         setShouldRender(false);
-      }
-    }, durationMs + 800);
-  };
+        isModelReadyRef.current = false;
+      }, EXIT_MS);
+    },
+    [clearDismissTimer, clearUnmountTimer],
+  );
 
-  const handleDismiss = () => {
-    setIsVisible(false);
-    window.setTimeout(() => setShouldRender(false), 700);
-  };
+  const startDismissTimer = useCallback(
+    (delay = AUTO_DISMISS_MS) => {
+      clearDismissTimer();
+      if (dismissedRef.current || dismissedByUserRef.current) return;
 
-  const handleMouseEnter = () => {
-    isHoveredRef.current = true;
-    window.clearTimeout(exitTimerRef.current);
-    window.clearTimeout(unmountTimerRef.current);
-  };
+      dismissTimerRef.current = window.setTimeout(() => {
+        dismissTimerRef.current = undefined;
+        if (
+          !isActiveRef.current ||
+          pointerInsideRef.current ||
+          focusInsideRef.current ||
+          dismissedByUserRef.current
+        ) {
+          return;
+        }
+        dismissPeek();
+      }, delay);
+    },
+    [clearDismissTimer, dismissPeek],
+  );
 
-  const handleMouseLeave = () => {
-    isHoveredRef.current = false;
-    startDismissTimers(3500);
-  };
+  const handleModelReady = useCallback(() => {
+    isModelReadyRef.current = true;
+    if (!isActiveRef.current || dismissedRef.current || dismissedByUserRef.current) return;
+
+    setIsVisible(true);
+    startDismissTimer();
+  }, [startDismissTimer]);
 
   useEffect(() => {
-    if (isActive) {
-      setShouldRender(true);
-      const entryTimer = window.setTimeout(() => setIsVisible(true), 50);
-      startDismissTimers(8000);
+    isActiveRef.current = isActive;
+    clearDismissTimer();
+    clearUnmountTimer();
 
+    if (!isActive) {
+      dismissPeek();
       return () => {
-        window.clearTimeout(entryTimer);
-        window.clearTimeout(exitTimerRef.current);
-        window.clearTimeout(unmountTimerRef.current);
+        clearDismissTimer();
+        clearUnmountTimer();
       };
+    }
+
+    dismissedRef.current = false;
+    dismissedByUserRef.current = false;
+    pointerInsideRef.current = false;
+    focusInsideRef.current = false;
+    setShouldRender(true);
+
+    if (isModelReadyRef.current) {
+      setIsVisible(true);
+      startDismissTimer();
     } else {
       setIsVisible(false);
-      const unmountTimer = window.setTimeout(() => setShouldRender(false), 700);
-      return () => window.clearTimeout(unmountTimer);
     }
-  }, [isActive]);
+
+    return () => {
+      clearDismissTimer();
+      clearUnmountTimer();
+    };
+  }, [isActive, clearDismissTimer, clearUnmountTimer, dismissPeek, startDismissTimer]);
+
+  const handlePointerEnter = () => {
+    pointerInsideRef.current = true;
+    clearDismissTimer();
+    if (!isActiveRef.current || dismissedByUserRef.current) return;
+    clearUnmountTimer();
+
+    if (dismissedRef.current && isModelReadyRef.current) {
+      dismissedRef.current = false;
+      setIsVisible(true);
+    }
+  };
+
+  const handlePointerLeave = () => {
+    pointerInsideRef.current = false;
+    if (!focusInsideRef.current) startDismissTimer(AFTER_HOVER_MS);
+  };
+
+  const handleFocusCapture = () => {
+    focusInsideRef.current = true;
+    clearDismissTimer();
+    if (!isActiveRef.current || dismissedByUserRef.current) return;
+    clearUnmountTimer();
+
+    if (dismissedRef.current && isModelReadyRef.current) {
+      dismissedRef.current = false;
+      setIsVisible(true);
+    }
+  };
+
+  const handleBlurCapture = (event: React.FocusEvent<HTMLDivElement>) => {
+    const nextTarget = event.relatedTarget;
+    focusInsideRef.current = nextTarget instanceof Node && event.currentTarget.contains(nextTarget);
+    if (!pointerInsideRef.current && !focusInsideRef.current) {
+      startDismissTimer(AFTER_HOVER_MS);
+    }
+  };
 
   if (!shouldRender) return null;
 
   return (
-    <div
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={`fixed bottom-0 right-0 z-50 pointer-events-auto flex flex-col items-end transition-all duration-700 ease-out transform select-none ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-      }`}
-      aria-label="Mascote Guardião Medieval"
-    >
-      {/* Balão de Fala Temático Medieval com botão de fechar */}
-      <div className="mr-8 mb-[-12px] bg-[#350A18]/95 border-2 border-[#D9A45C] text-[#FDF9F3] pl-4 pr-2 py-2 rounded-2xl rounded-br-none shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce">
-        <Sparkles className="w-4 h-4 text-[#D9A45C] shrink-0" />
-        <span className="text-xs font-serif font-bold tracking-wide">
-          Saudações, Nobre Visitante!
-        </span>
-        <button
-          onClick={handleDismiss}
-          className="ml-1 p-0.5 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
-          title="Fechar"
-          aria-label="Fechar mascote"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
+    <div className="medieval-mascot-peek" aria-hidden={!isVisible}>
+      <div
+        className={`medieval-mascot-peek__panel${isVisible ? ' is-visible' : ''}`}
+        onMouseEnter={handlePointerEnter}
+        onMouseLeave={handlePointerLeave}
+        onFocusCapture={handleFocusCapture}
+        onBlurCapture={handleBlurCapture}
+        role="group"
+        aria-label="Mascote Guardião Medieval"
+      >
+        <div className="medieval-mascot-peek__frame" aria-hidden="true">
+          <Canvas
+            dpr={[1, 1.25]}
+            frameloop={reducedMotion ? 'demand' : 'always'}
+            camera={{ position: [0, 0, 7.2], fov: 38, near: 0.1, far: 60 }}
+            gl={{
+              alpha: true,
+              antialias: true,
+              powerPreference: 'high-performance',
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.2,
+            }}
+          >
+            <ambientLight intensity={0.85} />
+            <directionalLight position={[-1.8, 3.2, 4]} intensity={2.1} color="#FFF5E0" />
+            <pointLight position={[2.5, 1.1, 3.5]} intensity={0.75} color="#D9A45C" />
+            <pointLight position={[1.5, 2.2, -3]} intensity={1.7} color="#60A5FA" />
+            <Suspense fallback={null}>
+              <MascotModel
+                isVisible={isVisible}
+                reducedMotion={reducedMotion}
+                onReady={handleModelReady}
+              />
+            </Suspense>
+          </Canvas>
+        </div>
 
-      {/* Janela de Renderização 3D (Cortada perfeitamente na base) */}
-      <div className="w-64 h-72 sm:w-80 sm:h-88">
-        <Canvas
-          camera={{ position: [0, 0.25, 1.45], fov: 40 }}
-          gl={{
-            alpha: true,
-            antialias: true,
-            powerPreference: 'high-performance',
-            toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1.25,
-          }}
-        >
-          {/* Luz de ambiente e luz quente dourada frontal de tocha/castelo */}
-          <ambientLight intensity={1.4} />
-          <directionalLight position={[1.5, 2.5, 3]} intensity={2.2} color="#fff6e5" />
-          <directionalLight position={[-2.5, 1.8, 2]} intensity={1.5} color="#D9A45C" />
-          {/* Rim light azulada traseira para destacar a silhueta da pelagem */}
-          <pointLight position={[0, 2, -2]} intensity={2.0} color="#60a5fa" />
-
-          <Suspense fallback={null}>
-            <MascotModel />
-          </Suspense>
-        </Canvas>
+        <div className="medieval-mascot-peek__bubble" role="status" aria-live="polite">
+          <Sparkles className="medieval-mascot-peek__sparkle" size={17} aria-hidden="true" />
+          <span>Saudações, nobre viajante!</span>
+          <button
+            type="button"
+            className="medieval-mascot-peek__close"
+            tabIndex={isVisible ? 0 : -1}
+            onClick={() => dismissPeek(true)}
+            title="Fechar mascote"
+            aria-label="Fechar mascote medieval"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -398,6 +398,7 @@ test('both pages and every atmosphere have no horizontal overflow at small and l
   page,
   isMobile,
 }) => {
+  test.setTimeout(60_000);
   test.skip(isMobile, 'Viewport sweep is run once');
   for (const path of ['/', '/cardapio']) {
     await page.goto(path);

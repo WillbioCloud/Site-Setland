@@ -6,13 +6,17 @@ import { Footer } from './components/Footer';
 import { TicketModal } from './components/TicketModal';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { ThemeAtmosphere } from './components/ThemeAtmosphere';
-import { MedievalMascotPeek } from './components/MedievalMascotPeek';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { Home } from './pages/Home';
 
 const FullMenu = lazy(() =>
   import('./pages/FullMenu').then((module) => ({ default: module.FullMenu })),
+);
+const MedievalMascotPeek = lazy(() =>
+  import('./components/MedievalMascotPeek').then((module) => ({
+    default: module.MedievalMascotPeek,
+  })),
 );
 
 function RouteEffects() {
@@ -61,7 +65,14 @@ function NotFound() {
 function AppContent() {
   const [ticketOpen, setTicketOpen] = useState(false);
   const { currentTheme } = useTheme();
+  const [hasActivatedMedievalMascot, setHasActivatedMedievalMascot] = useState(
+    currentTheme === 'medieval',
+  );
   const openTickets = () => setTicketOpen(true);
+
+  useEffect(() => {
+    if (currentTheme === 'medieval') setHasActivatedMedievalMascot(true);
+  }, [currentTheme]);
 
   return (
     <BrowserRouter>
@@ -91,7 +102,11 @@ function AppContent() {
         <TicketModal isOpen={ticketOpen} onClose={() => setTicketOpen(false)} />
         <GeminiAssistant onOpenTickets={openTickets} />
         <ThemeAtmosphere />
-        <MedievalMascotPeek isActive={currentTheme === 'medieval'} />
+        {hasActivatedMedievalMascot && (
+          <Suspense fallback={null}>
+            <MedievalMascotPeek isActive={currentTheme === 'medieval'} />
+          </Suspense>
+        )}
       </div>
     </BrowserRouter>
   );

@@ -127,6 +127,149 @@ button {
 .site-shell {
   min-height: 100svh;
 }
+
+/* Full-viewport clip keeps the off-canvas entrance from creating horizontal scroll. */
+.medieval-mascot-peek {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.medieval-mascot-peek__panel {
+  position: absolute;
+  right: 0;
+  bottom: clamp(7.5rem, 21vh, 12rem);
+  width: clamp(16.5rem, 28vw, 25rem);
+  height: clamp(23rem, 52vh, 32rem);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(calc(100% + 1rem), 0, 0);
+  transition:
+    transform 760ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms ease;
+  will-change: transform, opacity;
+}
+.medieval-mascot-peek__panel.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.medieval-mascot-peek__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 86%,
+    rgb(0 0 0 / 78%) 93%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to bottom, #000 0%, #000 86%, rgb(0 0 0 / 78%) 93%, transparent 100%);
+}
+.medieval-mascot-peek__frame canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.medieval-mascot-peek__bubble {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: clamp(1rem, 4vw, 2.25rem);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 1.5rem));
+  padding: 0.65rem 0.55rem 0.65rem 0.85rem;
+  border: 1px solid rgb(217 164 92 / 78%);
+  border-radius: 1rem 1rem 0.2rem 1rem;
+  background: rgb(53 10 24 / 96%);
+  box-shadow:
+    0 14px 42px rgb(0 0 0 / 36%),
+    0 0 22px rgb(217 164 92 / 10%);
+  color: #fdf9f3;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  line-height: 1.35;
+  pointer-events: auto;
+  transform: translateY(calc(-100% - 0.65rem));
+  backdrop-filter: blur(12px);
+}
+.medieval-mascot-peek__sparkle {
+  flex: 0 0 auto;
+  color: #d9a45c;
+}
+.medieval-mascot-peek__close {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgb(255 255 255 / 74%);
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+  pointer-events: auto;
+}
+.medieval-mascot-peek__close:hover,
+.medieval-mascot-peek__close:focus-visible {
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+}
+.medieval-mascot-peek__close:focus-visible {
+  outline: 2px solid #d9a45c;
+  outline-offset: 2px;
+}
+@media (max-width: 1199px) {
+  .medieval-mascot-peek__bubble {
+    top: 2.85rem;
+    right: 0.4rem;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    max-width: 2rem;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    transform: none;
+  }
+  .medieval-mascot-peek__bubble > span,
+  .medieval-mascot-peek__sparkle {
+    display: none;
+  }
+  .medieval-mascot-peek__close {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid rgb(217 164 92 / 78%);
+    background: rgb(53 10 24 / 92%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  }
+}
+@media (max-width: 900px) {
+  .medieval-mascot-peek__panel {
+    right: 0;
+    bottom: clamp(3rem, 6vh, 3.5rem);
+    width: min(54vw, 14rem);
+    height: min(28vh, 14rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .medieval-mascot-peek__panel {
+    transition-duration: 0.01ms;
+    will-change: auto;
+  }
+}
 .section {
   padding-block: 104px;
   scroll-margin-top: var(--header-height);
@@ -603,6 +746,22 @@ button {
   border-left: 1px solid rgb(255 255 255 / 18%);
   padding-left: 25px;
   margin-top: 34px;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (min-width: 1300px) {
+  html[data-theme='medieval'] .hero-era-switch {
+    transform: translateX(-18rem);
+  }
+}
+@media (min-width: 1200px) and (max-width: 1299px) {
+  html[data-theme='medieval'] .hero-era-switch {
+    transform: translateX(-16rem);
+  }
+}
+@media (min-width: 901px) and (max-width: 1199px) {
+  html[data-theme='medieval'] .hero-era-switch {
+    transform: translateX(-8rem);
+  }
 }
 .hero-era-switch > .eyebrow {
   font-size: 10px;
