@@ -21,8 +21,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('/node_modules/three/build/')) return 'three-core';
-          if (id.includes('/node_modules/three/examples/jsm/')) return 'three-addons';
+          const normalized = id.replace(/\\/g, '/');
+          if (normalized.includes('/node_modules/three/build/')) return 'three-core';
+          if (normalized.includes('/node_modules/three/examples/jsm/')) return 'three-addons';
         },
       },
     },

@@ -119,7 +119,7 @@ export function Hero({ onOpenTickets }: { onOpenTickets: () => void }) {
             className="hero__poster"
             width="1200"
             height="800"
-            fetchPriority="high"
+            {...{ fetchpriority: 'high' }}
           />
           {!videoFailed && (
             <video

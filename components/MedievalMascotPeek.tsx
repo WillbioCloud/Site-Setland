@@ -22,6 +22,7 @@ export interface MedievalMascotPeekProps {
 const MASCOT_URL = '/models/mascote-com-rig-animado.glb';
 const GREETING_CLIP_NAME = 'ArmaçãoAction';
 const AUTO_DISMISS_MS = 8_500;
+const AUTO_DISMISS_MOBILE_MS = 6_000;
 const AFTER_HOVER_MS = 4_500;
 const EXIT_MS = 760;
 const ACTION_FADE_MS = 260;
@@ -42,7 +43,48 @@ function MascotModel({ isVisible, reducedMotion, onReady }: MascotModelProps) {
   const gltf = useGLTF(MASCOT_URL);
   // SkeletonUtils.clone preserves the skinned mesh/bone relationship while allowing
   // per-instance material tweaks without mutating drei's cached GLTF scene.
-  const scene = useMemo(() => cloneSkinnedScene(gltf.scene), [gltf.scene]);
+  const scene = useMemo(() => {
+    const cloned = cloneSkinnedScene(gltf.scene);
+    cloned.traverse((object) => {
+      if (!(object as THREE.Mesh).isMesh) return;
+      const mesh = object as THREE.Mesh;
+
+      if (!mesh.geometry.getAttribute('normal')) {
+        mesh.geometry.computeVertexNormals();
+      }
+
+      const refineMaterial = (source: THREE.Material) => {
+        const material = source.clone();
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.roughness = Math.max(material.roughness, 0.82);
+          material.metalness = Math.min(material.metalness, 0.15);
+          if (material.normalMap) material.normalScale.set(1.6, 1.6);
+        }
+        return material;
+      };
+
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map(refineMaterial)
+        : refineMaterial(mesh.material);
+    });
+    return cloned;
+  }, [gltf.scene]);
+
+  // Clean up cloned materials and geometries when unmounted to prevent WebGL memory leaks
+  useEffect(() => {
+    return () => {
+      scene.traverse((object) => {
+        if (!(object as THREE.Mesh).isMesh) return;
+        const mesh = object as THREE.Mesh;
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((m) => m.dispose());
+        } else {
+          mesh.material?.dispose();
+        }
+      });
+    };
+  }, [scene]);
+
   const stageRef = useRef<THREE.Group>(null);
   const invalidate = useThree((state) => state.invalidate);
   const { actions } = useAnimations(gltf.animations, stageRef);
@@ -55,49 +97,6 @@ function MascotModel({ isVisible, reducedMotion, onReady }: MascotModelProps) {
     );
   }, [gltf.animations]);
   const greetingAction = greetingClip ? actions[greetingClip.name] : undefined;
-
-  // Keep authored vertex normals when present. This GLB has them, plus a normal map;
-  // recomputing them on a skinned mesh would overwrite its authored smooth shading.
-  // Only generate normals for a mesh that genuinely has no normal attribute.
-  useLayoutEffect(() => {
-    const clonedMaterials: THREE.Material[] = [];
-    const originalMaterials: Array<{ mesh: THREE.Mesh; material: THREE.Mesh['material'] }> = [];
-
-    scene.traverse((object) => {
-      if (!(object as THREE.Mesh).isMesh) return;
-      const mesh = object as THREE.Mesh;
-      originalMaterials.push({ mesh, material: mesh.material });
-
-      if (!mesh.geometry.getAttribute('normal')) {
-        mesh.geometry.computeVertexNormals();
-      }
-
-      const refineMaterial = (source: THREE.Material) => {
-        const material = source.clone();
-        clonedMaterials.push(material);
-
-        if (material instanceof THREE.MeshStandardMaterial) {
-          material.roughness = Math.max(material.roughness, 0.82);
-          material.metalness = Math.min(material.metalness, 0.15);
-          if (material.normalMap) material.normalScale.set(1.6, 1.6);
-          material.needsUpdate = true;
-        }
-
-        return material;
-      };
-
-      mesh.material = Array.isArray(mesh.material)
-        ? mesh.material.map(refineMaterial)
-        : refineMaterial(mesh.material);
-    });
-
-    return () => {
-      originalMaterials.forEach(({ mesh, material }) => {
-        mesh.material = material;
-      });
-      clonedMaterials.forEach((material) => material.dispose());
-    };
-  }, [scene]);
 
   useEffect(() => {
     onReady();
@@ -140,13 +139,7 @@ function MascotModel({ isVisible, reducedMotion, onReady }: MascotModelProps) {
 
   useFrame(({ clock }) => {
     const stage = stageRef.current;
-    if (!stage) return;
-
-    if (!isVisible || reducedMotion) {
-      stage.position.set(...MODEL_POSITION);
-      stage.rotation.set(...MODEL_ROTATION);
-      return;
-    }
+    if (!stage || !isVisible || reducedMotion) return;
 
     const time = clock.getElapsedTime();
     // A tiny whole-body breath; the arm motion itself comes from the authored GLB clip.
@@ -208,9 +201,15 @@ export function MedievalMascotPeek({ isActive }: MedievalMascotPeekProps) {
   );
 
   const startDismissTimer = useCallback(
-    (delay = AUTO_DISMISS_MS) => {
+    (delay?: number) => {
       clearDismissTimer();
       if (dismissedRef.current || dismissedByUserRef.current) return;
+
+      const effectiveDelay =
+        delay ??
+        (typeof window !== 'undefined' && window.innerWidth < 768
+          ? AUTO_DISMISS_MOBILE_MS
+          : AUTO_DISMISS_MS);
 
       dismissTimerRef.current = window.setTimeout(() => {
         dismissTimerRef.current = undefined;
@@ -223,7 +222,7 @@ export function MedievalMascotPeek({ isActive }: MedievalMascotPeekProps) {
           return;
         }
         dismissPeek();
-      }, delay);
+      }, effectiveDelay);
     },
     [clearDismissTimer, dismissPeek],
   );
@@ -320,13 +319,13 @@ export function MedievalMascotPeek({ isActive }: MedievalMascotPeekProps) {
       >
         <div className="medieval-mascot-peek__frame" aria-hidden="true">
           <Canvas
-            dpr={[1, 1.25]}
-            frameloop={reducedMotion ? 'demand' : 'always'}
-            camera={{ position: [0, 0, 7.2], fov: 38, near: 0.1, far: 60 }}
+            dpr={typeof window !== 'undefined' && window.innerWidth < 768 ? 1 : [1, 1.25]}
+            frameloop={!isVisible || reducedMotion ? 'demand' : 'always'}
+            camera={{ position: [0, 0, 7.2], fov: 38, near: 0.1, far: 30 }}
             gl={{
               alpha: true,
-              antialias: true,
-              powerPreference: 'high-performance',
+              antialias: typeof window !== 'undefined' ? window.devicePixelRatio <= 1 : false,
+              powerPreference: 'default',
               toneMapping: THREE.ACESFilmicToneMapping,
               toneMappingExposure: 1.2,
             }}

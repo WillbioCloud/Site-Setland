@@ -105,7 +105,7 @@ export function FullMenu() {
     <div className="menu-page">
       <section className="menu-page-hero">
         <div className="menu-page-hero__image" aria-hidden="true">
-          <img src={mignon} alt="" width="770" height="514" fetchPriority="high" />
+          <img src={mignon} alt="" width="770" height="514" {...{ fetchpriority: 'high' }} />
         </div>
         <div className="container menu-page-hero__inner">
           <nav className="breadcrumbs" aria-label="Caminho de navegação">

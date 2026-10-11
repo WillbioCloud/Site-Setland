@@ -7,7 +7,6 @@ import {
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
-  Clock,
   CylinderGeometry,
   DirectionalLight,
   DoubleSide,
@@ -552,7 +551,7 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
     resizeObserver.observe(canvas);
     resize();
 
-    const clock = new Clock();
+    const startPerfTime = performance.now();
     let isVisible = false;
     const animate = () => {
       if (disposed || !isVisible) return;
@@ -594,7 +593,7 @@ export function InteractiveMapCanvas({ motion, onFailure }: MapCanvasProps) {
       world.rotation.x = motion.current.tiltY * 0.026;
       world.rotation.z = -motion.current.tiltX * 0.012;
 
-      const elapsed = clock.getElapsedTime();
+      const elapsed = (performance.now() - startPerfTime) / 1000;
       flames.forEach((flame, index) => {
         const flicker = Math.sin(elapsed * (6.7 + index) + index * 1.8) * 0.035;
         flame.scale.y = 1.25 + flicker;
