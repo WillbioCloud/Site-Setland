@@ -442,6 +442,7 @@ class FrostEngine {
   private thawHasContent = false;
   private firstThawNotified = false;
   private lastPoint: Point | null = null;
+  private isCurrentGestureScratch = false;
 
   private ctx: CanvasRenderingContext2D | null = null;
   private texture: HTMLCanvasElement | null = null;
@@ -487,10 +488,15 @@ class FrostEngine {
   }
 
   start() {
+    this.interaction.addEventListener('pointerdown', this.handlePointerDown);
     this.interaction.addEventListener('pointermove', this.handlePointerMove);
     this.interaction.addEventListener('pointerleave', this.endStroke);
     this.interaction.addEventListener('pointerup', this.endStroke);
     this.interaction.addEventListener('pointercancel', this.endStroke);
+    this.interaction.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+    this.interaction.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+    this.interaction.addEventListener('touchend', this.endStroke);
+    this.interaction.addEventListener('touchcancel', this.endStroke);
     for (const image of Array.from(this.frame.querySelectorAll('img'))) {
       image.addEventListener('load', this.wake);
     }
@@ -515,10 +521,15 @@ class FrostEngine {
     cancelAnimationFrame(this.loopId);
     this.loopId = 0;
     window.clearTimeout(this.resizeTimer);
+    this.interaction.removeEventListener('pointerdown', this.handlePointerDown);
     this.interaction.removeEventListener('pointermove', this.handlePointerMove);
     this.interaction.removeEventListener('pointerleave', this.endStroke);
     this.interaction.removeEventListener('pointerup', this.endStroke);
     this.interaction.removeEventListener('pointercancel', this.endStroke);
+    this.interaction.removeEventListener('touchstart', this.handleTouchStart);
+    this.interaction.removeEventListener('touchmove', this.handleTouchMove);
+    this.interaction.removeEventListener('touchend', this.endStroke);
+    this.interaction.removeEventListener('touchcancel', this.endStroke);
     for (const image of Array.from(this.frame.querySelectorAll('img'))) {
       image.removeEventListener('load', this.wake);
     }
@@ -784,11 +795,11 @@ class FrostEngine {
     ctx.restore();
   }
 
-  private toThawPoint(event: PointerEvent): Point | null {
+  private clientToThawPoint(clientX: number, clientY: number): Point | null {
     const rect = this.canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
     return {
       x: (x / rect.width) * this.thaw.width,
@@ -796,8 +807,194 @@ class FrostEngine {
     };
   }
 
+  private toThawPoint(event: PointerEvent): Point | null {
+    return this.clientToThawPoint(event.clientX, event.clientY);
+  }
+
+  /**
+   * Returns whether the given client coordinate is covered by frozen ice.
+   * If the area was already scratched/thawed, this returns false so natural scrolling can proceed.
+   */
+  public isPointFrozen(clientX: number, clientY: number): boolean {
+    if (this.disposed || !this.visible || this.progress < MIN_THAW_PROGRESS) return false;
+
+    const rect = this.canvas.getBoundingClientRect();
+    if (
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom
+    ) {
+      return false;
+    }
+
+    const relX = clientX - rect.left;
+    const relY = clientY - rect.top;
+
+    // 1. If not yet fully frozen, check if the radial frost front has reached this position
+    if (this.progress < 1) {
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const dist = Math.hypot(relX - cx, relY - cy);
+      const maxRadius = Math.hypot(cx, cy);
+      const feather = maxRadius * 0.22;
+      const outer = maxRadius + feather;
+      const eased = easeOutCubic(this.progress);
+      const front = outer * (1 - eased) - feather * eased;
+      if (dist < Math.max(0, front - feather * 0.5)) {
+        return false;
+      }
+    }
+
+    // 2. Check if this point was already scratched in the thaw mask
+    if (this.thawHasContent && this.thawCtx && this.thaw.width > 0 && this.thaw.height > 0) {
+      const thawX = clamp(
+        Math.floor((relX / rect.width) * this.thaw.width),
+        0,
+        this.thaw.width - 1,
+      );
+      const thawY = clamp(
+        Math.floor((relY / rect.height) * this.thaw.height),
+        0,
+        this.thaw.height - 1,
+      );
+
+      try {
+        const pixel = this.thawCtx.getImageData(thawX, thawY, 1, 1).data;
+        // pixel[3] > 35 indicates that the frost was thawed/scratched at this spot
+        if (pixel[3] > 35) {
+          return false;
+        }
+      } catch {
+        // Fall back to considering it frozen
+      }
+    }
+
+    return true;
+  }
+
+  private handlePointerDown = (event: PointerEvent) => {
+    if (!event.isPrimary) return;
+    const isInteractive = Boolean(
+      (event.target as HTMLElement | null)?.closest(
+        'button, a, input, select, textarea, [role="button"]',
+      ),
+    );
+    if (isInteractive) {
+      this.isCurrentGestureScratch = false;
+      return;
+    }
+
+    const frozen = this.isPointFrozen(event.clientX, event.clientY);
+    this.isCurrentGestureScratch = frozen;
+
+    if (frozen) {
+      const point = this.toThawPoint(event);
+      if (point) {
+        this.lastActivityAt = performance.now();
+        this.stampThaw(point);
+        this.lastPoint = point;
+        this.thawHasContent = true;
+        this.dirty = true;
+        this.wake();
+        if (!this.firstThawNotified) {
+          this.firstThawNotified = true;
+          this.onFirstThaw();
+        }
+      }
+    }
+  };
+
+  private handleTouchStart = (event: TouchEvent) => {
+    if (event.touches.length !== 1) {
+      this.isCurrentGestureScratch = false;
+      return;
+    }
+    const touch = event.touches[0];
+    const isInteractive = Boolean(
+      (event.target as HTMLElement | null)?.closest(
+        'button, a, input, select, textarea, [role="button"]',
+      ),
+    );
+    if (isInteractive) {
+      this.isCurrentGestureScratch = false;
+      return;
+    }
+
+    // If pointerdown already recognized this contact on frozen ice, keep it!
+    if (this.isCurrentGestureScratch) {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    const frozen = this.isPointFrozen(touch.clientX, touch.clientY);
+    this.isCurrentGestureScratch = frozen;
+
+    if (frozen) {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      const point = this.clientToThawPoint(touch.clientX, touch.clientY);
+      if (point) {
+        this.lastActivityAt = performance.now();
+        this.stampThaw(point);
+        this.lastPoint = point;
+        this.thawHasContent = true;
+        this.dirty = true;
+        this.wake();
+        if (!this.firstThawNotified) {
+          this.firstThawNotified = true;
+          this.onFirstThaw();
+        }
+      }
+    }
+  };
+
+  private handleTouchMove = (event: TouchEvent) => {
+    if (!this.isCurrentGestureScratch) {
+      // Touch started on thawed area: allow normal vertical scroll!
+      return;
+    }
+
+    // Touch started on frozen area: prevent scroll and scratch the ice!
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    if (event.touches.length === 1) {
+      const touch = event.touches[0];
+      const point = this.clientToThawPoint(touch.clientX, touch.clientY);
+      if (!point) {
+        this.lastPoint = null;
+        return;
+      }
+      this.lastActivityAt = performance.now();
+      if (this.lastPoint) {
+        this.strokeThaw(this.lastPoint, point);
+      } else {
+        this.stampThaw(point);
+      }
+      this.lastPoint = point;
+      this.thawHasContent = true;
+      this.dirty = true;
+      this.wake();
+      if (!this.firstThawNotified) {
+        this.firstThawNotified = true;
+        this.onFirstThaw();
+      }
+    }
+  };
+
   private handlePointerMove = (event: PointerEvent) => {
     if (!event.isPrimary || !this.visible || this.progress < MIN_THAW_PROGRESS) return;
+
+    // For touch pointers on a thawed spot, leave vertical scrolling to the browser
+    if (event.pointerType === 'touch' && !this.isCurrentGestureScratch) {
+      return;
+    }
+
     const point = this.toThawPoint(event);
     if (!point) {
       this.lastPoint = null;
@@ -821,6 +1018,7 @@ class FrostEngine {
 
   private endStroke = () => {
     this.lastPoint = null;
+    this.isCurrentGestureScratch = false;
   };
 
   private strokeThaw(from: Point, to: Point) {
