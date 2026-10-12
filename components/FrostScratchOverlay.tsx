@@ -875,14 +875,17 @@ class FrostEngine {
 
   private handlePointerDown = (event: PointerEvent) => {
     if (!event.isPrimary) return;
-    const isInteractive = Boolean(
-      (event.target as HTMLElement | null)?.closest(
-        'button, a, input, select, textarea, [role="button"]',
-      ),
-    );
-    if (isInteractive) {
-      this.isCurrentGestureScratch = false;
-      return;
+
+    if (this.mode === 'hero') {
+      const isHeroActionButton = Boolean(
+        (event.target as HTMLElement | null)?.closest(
+          'button, a, input, select, textarea, [role="button"]',
+        ),
+      );
+      if (isHeroActionButton) {
+        this.isCurrentGestureScratch = false;
+        return;
+      }
     }
 
     const frozen = this.isPointFrozen(event.clientX, event.clientY);
@@ -911,14 +914,17 @@ class FrostEngine {
       return;
     }
     const touch = event.touches[0];
-    const isInteractive = Boolean(
-      (event.target as HTMLElement | null)?.closest(
-        'button, a, input, select, textarea, [role="button"]',
-      ),
-    );
-    if (isInteractive) {
-      this.isCurrentGestureScratch = false;
-      return;
+
+    if (this.mode === 'hero') {
+      const isHeroActionButton = Boolean(
+        (event.target as HTMLElement | null)?.closest(
+          'button, a, input, select, textarea, [role="button"]',
+        ),
+      );
+      if (isHeroActionButton) {
+        this.isCurrentGestureScratch = false;
+        return;
+      }
     }
 
     // If pointerdown already recognized this contact on frozen ice, keep it!
