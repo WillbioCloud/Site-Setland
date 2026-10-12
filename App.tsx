@@ -6,6 +6,7 @@ import { Footer } from './components/Footer';
 import { TicketModal } from './components/TicketModal';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { ThemeAtmosphere } from './components/ThemeAtmosphere';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { Home } from './pages/Home';
@@ -107,6 +108,7 @@ function AppContent() {
             <MedievalMascotPeek isActive={currentTheme === 'medieval'} />
           </Suspense>
         )}
+        <CookieConsentBanner />
       </div>
     </BrowserRouter>
   );

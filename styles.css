@@ -743,25 +743,11 @@ button {
   margin-top: 20px;
 }
 .hero-era-switch {
+  position: relative;
+  z-index: 10;
   border-left: 1px solid rgb(255 255 255 / 18%);
   padding-left: 25px;
   margin-top: 34px;
-  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-@media (min-width: 1300px) {
-  html[data-theme='medieval'] .hero-era-switch {
-    transform: translateX(-18rem);
-  }
-}
-@media (min-width: 1200px) and (max-width: 1299px) {
-  html[data-theme='medieval'] .hero-era-switch {
-    transform: translateX(-16rem);
-  }
-}
-@media (min-width: 901px) and (max-width: 1199px) {
-  html[data-theme='medieval'] .hero-era-switch {
-    transform: translateX(-8rem);
-  }
 }
 .hero-era-switch > .eyebrow {
   font-size: 10px;
