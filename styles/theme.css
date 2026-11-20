@@ -287,18 +287,14 @@
 
 /* ─── Futuristic ──────────────────────────────────────────────────────────── */
 
-/* Static HUD grid behind the page; it does not move, so it stays on for reduced motion. */
+/* Subtle editorial ambient wash; dark depth without artificial grid clutter. */
 :root[data-theme='futuristic'] body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgb(0 240 255 / 4%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(0 240 255 / 4%) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, transparent 75%);
+  background: radial-gradient(ellipse at 50% 0%, rgb(0 240 255 / 3.5%) 0%, transparent 65%);
 }
 
 :root[data-theme='futuristic'] .hero h1 > span {
@@ -377,17 +373,9 @@
   text-shadow: 0 0 22px rgb(0 240 255 / 28%);
 }
 
-/* Scanlines across the header. */
+/* Header accent in futuristic mode. */
 :root[data-theme='futuristic'] .site-header {
-  border-bottom-color: rgb(0 240 255 / 22%);
-}
-
-:root[data-theme='futuristic'] .site-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgb(0 240 255 / 4%) 0 1px, transparent 1px 3px);
+  border-bottom-color: rgb(0 240 255 / 20%);
 }
 
 :root[data-theme='futuristic'] .site-footer {

@@ -235,7 +235,7 @@ export function InteractiveMapSection() {
               <Suspense
                 fallback={<div className="interactive-map__scene-loading" aria-hidden="true" />}
               >
-                <MapCanvas motion={sceneMotion} onFailure={handleWebglFailure} />
+                <MapCanvas motion={sceneMotion} mapOverlayRef={mapWindowRef} onFailure={handleWebglFailure} />
               </Suspense>
             )}
 

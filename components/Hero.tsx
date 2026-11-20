@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from './Button';
+import { TicketCtaButton } from './TicketCtaButton';
 import { Modal } from './Modal';
 import { FrostScratchOverlay } from './FrostScratchOverlay';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -161,10 +162,7 @@ export function Hero({ onOpenTickets }: { onOpenTickets: () => void }) {
             </h1>
             <p className="hero__description">{content.description}</p>
             <div className="hero__actions">
-              <Button size="lg" onClick={onOpenTickets}>
-                <Ticket size={18} strokeWidth={1.7} aria-hidden="true" /> Garanta seu ingresso{' '}
-                <ArrowRight size={18} aria-hidden="true" />
-              </Button>
+              <TicketCtaButton onClick={onOpenTickets} />
               <Link to="/#eras" className="button button--outline button--lg">
                 Explore as 3 eras <ArrowDown size={16} aria-hidden="true" />
               </Link>

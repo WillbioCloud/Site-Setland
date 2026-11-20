@@ -14,6 +14,14 @@ import { Home } from './pages/Home';
 const FullMenu = lazy(() =>
   import('./pages/FullMenu').then((module) => ({ default: module.FullMenu })),
 );
+
+const PrivacyPolicy = lazy(() =>
+  import('./pages/PrivacyPolicy').then((module) => ({ default: module.PrivacyPolicy })),
+);
+
+const TermsOfUse = lazy(() =>
+  import('./pages/TermsOfUse').then((module) => ({ default: module.TermsOfUse })),
+);
 const MedievalMascotPeek = lazy(() =>
   import('./components/MedievalMascotPeek').then((module) => ({
     default: module.MedievalMascotPeek,
@@ -28,9 +36,13 @@ function RouteEffects() {
     document.title =
       pathname === '/cardapio'
         ? 'Gastronomia — Setland'
-        : pathname === '/'
-          ? 'Setland — Uma viagem além do tempo'
-          : 'Página não encontrada — Setland';
+        : pathname === '/privacidade'
+          ? 'Política de Privacidade — Setland'
+          : pathname === '/termos'
+            ? 'Termos de Uso — Setland'
+            : pathname === '/'
+              ? 'Setland — Uma viagem além do tempo'
+              : 'Página não encontrada — Setland';
     if (!hash) {
       window.scrollTo({ top: 0, behavior: 'instant' });
       return;
@@ -95,6 +107,8 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<Home onOpenTickets={openTickets} />} />
               <Route path="/cardapio" element={<FullMenu />} />
+              <Route path="/privacidade" element={<PrivacyPolicy />} />
+              <Route path="/termos" element={<TermsOfUse />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

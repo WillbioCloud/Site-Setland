@@ -573,8 +573,10 @@ class FrostEngine {
 
     const { profile } = this;
     const dpr = window.devicePixelRatio || 1;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const effectiveMaxDpr = isMobile ? Math.min(profile.maxDpr, 1.5) : profile.maxDpr;
     const areaLimit = Math.sqrt(profile.maxPixels / (cssWidth * cssHeight));
-    const scale = clamp(Math.min(dpr, profile.maxDpr, areaLimit), 0.5, profile.maxDpr);
+    const scale = clamp(Math.min(dpr, effectiveMaxDpr, areaLimit), 0.5, effectiveMaxDpr);
     const width = Math.max(2, Math.round(cssWidth * scale));
     const height = Math.max(2, Math.round(cssHeight * scale));
 

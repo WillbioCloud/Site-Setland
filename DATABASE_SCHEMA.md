@@ -1,0 +1,158 @@
+# Database Schema Audit (Supabase)
+
+## Visão Geral
+Tabelas públicas encontradas no banco atualizado:
+- `clients`
+- `employees`
+- `online_orders`
+- `orders`
+- `packages`
+- `photo_sessions`
+- `session_photos`
+- `system_settings`
+- `system_users`
+
+---
+
+## Dicionário de Dados Detalhado
+
+### Tabela: `clients`
+- `id` (uuid, NO NULL, Default: `uuid_generate_v4()`) - **PK**
+- `created_at` (timestamptz, YES NULL, Default: `now()`)
+- `name` (text, NO NULL)
+- `cpf` (varchar, NO NULL)
+- `phone` (varchar, YES NULL)
+
+### Tabela: `employees`
+- `id` (uuid, NO NULL, Default: `gen_random_uuid()`) - **PK**
+- `created_at` (timestamptz, NO NULL, Default: `timezone('utc'::text, now())`)
+- `name` (text, NO NULL)
+- `role` (text, NO NULL)
+- `status` (text, YES NULL, Default: `'Ativo'`)
+- `pin` (text, YES NULL)
+- `email` (text, YES NULL)
+- `avatar_url` (text, YES NULL)
+
+### Tabela: `online_orders`
+- `id` (uuid, NO NULL, Default: `gen_random_uuid()`) - **PK**
+- `created_at` (timestamptz, YES NULL, Default: `now()`)
+- `client_id` (uuid, YES NULL)
+- `client_name` (text, YES NULL)
+- `client_cpf` (text, YES NULL)
+- `client_phone` (text, YES NULL)
+- `package_name` (text, YES NULL)
+- `total_amount` (numeric, NO NULL)
+- `payment_status` (varchar, NO NULL, Default: `'pending'`) -- 'pending', 'paid', 'delivered'
+- `selected_photos` (jsonb, YES NULL)
+- `updated_at` (timestamptz, YES NULL, Default: `now()`)
+
+### Tabela: `orders`
+- `id` (uuid, NO NULL, Default: `uuid_generate_v4()`) - **PK**
+- `created_at` (timestamptz, YES NULL, Default: `now()`)
+- `session_id` (uuid, NO NULL)
+- `total_amount` (numeric, NO NULL)
+- `payment_method` (varchar, NO NULL)
+- `status` (varchar, NO NULL)
+- `photographer_name` (text, YES NULL)
+
+### Tabela: `packages`
+- `id` (uuid, NO NULL, Default: `uuid_generate_v4()`) - **PK**
+- `created_at` (timestamptz, YES NULL, Default: `now()`)
+- `name` (text, NO NULL)
+- `price` (numeric, NO NULL)
+- `includes_digital` (boolean, NO NULL)
+- `includes_printed` (integer, NO NULL)
+- `category` (text, YES NULL)
+- `description` (text, YES NULL)
+- `active` (boolean, YES NULL, Default: `true`)
+
+### Tabela: `photo_sessions`
+- `id` (uuid, NO NULL, Default: `uuid_generate_v4()`) - **PK**
+- `created_at` (timestamptz, YES NULL, Default: `now()`)
+- `client_id` (uuid, YES NULL)
+- `photographer_id` (uuid, YES NULL)
+- `folder_path_drive` (text, YES NULL)
+- `status` (varchar, NO NULL)
+- `client_name` (text, YES NULL)
+- `client_cpf` (text, YES NULL)
+- `client_phone` (text, YES NULL)
+- `photographer_name` (text, YES NULL)
+- `cover_photo_url` (text, YES NULL)
+- `access_token` (uuid, YES NULL, Default: `gen_random_uuid()`)
+- `drive_status` (text, YES NULL, Default: `'pending'`)
+- `drive_folder_id` (text, YES NULL)
+- `expires_at` (timestamptz, YES NULL, Default: `(now() + '30 days'::interval)`)
+- `local_cache_dir` (text, YES NULL)
+
+### Tabela: `session_photos`
+Registra cada imagem individual de uma sessão importada do cartão SD.
+
+| Coluna | Tipo | Padrão | Descrição |
+| :--- | :--- | :--- | :--- |
+| `id` | uuid / bigint | gen_random_uuid() | Identificador único da foto |
+| `session_id` | uuid / bigint | - | FK vinculada a `photo_sessions.id` |
+| `original_name` | text | - | Nome original do arquivo (ex: `DSC_0042.JPG`) |
+| `preview_url` | text | - | URL pública da miniatura WebP com marca d'água no Bucket |
+| `local_original_path`| text | - | Caminho absoluto do arquivo original em alta no SSD local |
+| `status` | text | `'pending'` | Estado da foto: `pending`, `selected`, `synced` |
+| `is_purchased` | boolean | `false` | Indica se a foto já foi paga/adquirida |
+| `is_printed` | boolean | `false` | Indica se a foto já foi impressa no quiosque |
+| `purchase_date` | timestamptz | `null` | Data e hora em que a compra foi confirmada |
+| `expires_at` | timestamptz | `now() + 30 days` | Data limite de retenção física antes da limpeza do robô |
+| `created_at` | timestamptz | `now()` | Timestamp de importação |
+
+#### Índices recomendados:
+- `idx_session_photos_session_id` (`session_id`)
+- `idx_session_photos_status` (`status`)
+- `idx_session_photos_expires_at` (`expires_at`)
+- `idx_session_photos_is_purchased` (`is_purchased`)
+
+### Tabela: `system_settings`
+- `id` (varchar, NO NULL, Default: `'default'`) - **PK**
+- `created_at` (timestamptz, NO NULL, Default: `timezone('utc'::text, now())`)
+- `updated_at` (timestamptz, NO NULL, Default: `timezone('utc'::text, now())`)
+- `google_drive_folder_id` (text, YES NULL, Default: `'1A2b3C4d5E6f7G8h9I0jKlMnOpQrStUvWxYz'`)
+- `whatsapp_api_url` (text, YES NULL)
+- `whatsapp_instance` (text, YES NULL)
+- `whatsapp_token` (text, YES NULL)
+- `receipt_footer` (text, YES NULL, Default: `'Obrigado por visitar a Setland!...'`)
+
+### Tabela: `system_users`
+- `id` (uuid, NO NULL, FK `auth.users(id)` ON DELETE CASCADE) - **PK**
+- `created_at` (timestamptz, YES NULL, Default: `now()`)
+- `email` (text, NO NULL, UNIQUE)
+- `name` (text, NO NULL)
+- `role` (text, NO NULL, Check: `'dono'`, `'gerente'`, `'operador'`)
+
+---
+
+## Colunas Opcionais de `session_photos` (usadas pela UI de Clientes)
+
+O modal de perfil do cliente (`ClientProfileModal`) e a listagem de Clientes leem **quando existirem**
+as colunas:
+
+- `expires_at` (timestamptz) — data-limite da exclusão física da foto (selo de contagem regressiva).
+- `is_purchased` (boolean) — marca explícita de foto adquirida (selo verde "Comprada").
+
+O front-end degrada com segurança: se essas colunas não existirem, ele recarrega a consulta sem
+elas e passa a calcular a expiração como `created_at + 30 dias` (mesma janela do robô de limpeza
+de `electron/main.ts`) e a considerar comprada toda foto com `status = 'selected' | 'synced'`.
+
+Migração sugerida, caso as colunas devam ser persistidas:
+
+```sql
+-- Opcional: manter explícito no banco o que hoje é derivado no front-end
+ALTER TABLE session_photos ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+ALTER TABLE session_photos ADD COLUMN IF NOT EXISTS is_purchased boolean NOT NULL DEFAULT false;
+```
+
+## Notas da Atualização (Auditoria Resolvida)
+
+As discrepâncias mapeadas anteriormente foram **solucionadas** no banco de dados real e o schema foi alinhado ao código do Front-end:
+
+1. **`photo_sessions` corrigida:** Todas as colunas esperadas pelo front-end (`client_name`, `client_cpf`, `access_token`, `local_cache_dir`, `cover_photo_url`, etc.) agora existem fisicamente na tabela. O erro fatal do Supabase sobre coluna inexistente foi sanado.
+2. **`photographers` obsoleta removida:** A antiga tabela legada não aparece mais no schema atual. Tudo agora passa apenas por `employees`.
+3. **Nova Tabela `system_settings`:** Introduzida com sucesso para gerenciar de forma dinâmica configurações de Drive, WhatsApp e PDV sem precisar de hardcode no front-end.
+4. **`orders` flexível:** Adicionada coluna `photographer_name` como text para registrar o nome sem depender estritamente de joins em tabelas legadas.
+5. **Nova Tabela `system_users`:** Mapeia perfis operacionais com integridade referencial a `auth.users` do Supabase para controle de acesso (`dono`, `gerente`, `operador`) no Desktop.
+6. **Nova Tabela `online_orders`:** Gerencia vendas realizadas via Pix no Portal Web (`setland-portal`), permitindo que o robô em segundo plano do Electron despache a entrega digital.

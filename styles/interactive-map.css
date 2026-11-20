@@ -5,10 +5,16 @@
   min-height: 730px;
   place-items: center;
   overflow: hidden;
-  border-block: 1px solid color-mix(in srgb, var(--theme-primary) 9%, transparent);
+  border-block: 1px solid color-mix(in srgb, var(--theme-primary) 12%, transparent);
   background:
-    radial-gradient(ellipse at 76% 50%, rgb(109 68 31 / 11%), transparent 40%),
-    linear-gradient(130deg, #100d0a 0%, #15100b 48%, #0d0b09 100%);
+    radial-gradient(ellipse at 76% 50%, color-mix(in srgb, var(--theme-primary) 8%, transparent) 0%, transparent 55%),
+    linear-gradient(
+      180deg,
+      var(--theme-bg) 0%,
+      color-mix(in srgb, var(--theme-surface) 92%, var(--theme-bg)) 35%,
+      color-mix(in srgb, var(--theme-surface) 92%, var(--theme-bg)) 65%,
+      var(--theme-bg) 100%
+    );
 }
 .interactive-map-loading > span {
   color: color-mix(in srgb, var(--theme-primary) 48%, transparent);
@@ -32,10 +38,16 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-block: 1px solid color-mix(in srgb, var(--theme-primary) 9%, transparent);
+  border-block: 1px solid color-mix(in srgb, var(--theme-primary) 12%, transparent);
   background:
-    radial-gradient(ellipse at 76% 50%, rgb(109 68 31 / 15%), transparent 40%),
-    linear-gradient(130deg, #100d0a 0%, #15100b 48%, #0d0b09 100%);
+    radial-gradient(ellipse at 76% 50%, color-mix(in srgb, var(--theme-primary) 8%, transparent) 0%, transparent 55%),
+    linear-gradient(
+      180deg,
+      var(--theme-bg) 0%,
+      color-mix(in srgb, var(--theme-surface) 92%, var(--theme-bg)) 35%,
+      color-mix(in srgb, var(--theme-surface) 92%, var(--theme-bg)) 65%,
+      var(--theme-bg) 100%
+    );
 }
 .interactive-map-section::before,
 .interactive-map-section::after {
@@ -46,8 +58,8 @@
 }
 .interactive-map-section::before {
   inset: 0;
-  opacity: 0.24;
-  background-image: radial-gradient(rgb(226 191 132 / 23%) 0.7px, transparent 0.7px);
+  opacity: 0.22;
+  background-image: radial-gradient(color-mix(in srgb, var(--theme-primary) 22%, transparent) 0.75px, transparent 0.75px);
   background-size: 24px 24px;
   mask-image: linear-gradient(90deg, transparent 0%, #000 65%, transparent 100%);
 }
@@ -80,7 +92,7 @@
 .interactive-map__copy > p {
   max-width: 390px;
   margin-top: 24px;
-  color: #b5aca0;
+  color: var(--theme-muted);
   font-size: 14px;
   line-height: 1.95;
 }
@@ -106,14 +118,14 @@
 }
 .interactive-map__destination strong {
   font-family: 'Cinzel', Georgia, serif;
-  color: #eee1c8;
+  color: var(--theme-text);
   font-size: 14px;
   font-weight: 400;
   letter-spacing: 0.02em;
 }
 .interactive-map__destination small {
   margin-top: 3px;
-  color: #928a7e;
+  color: var(--theme-muted);
   font-size: 11px;
   letter-spacing: 0.045em;
 }
@@ -256,68 +268,103 @@
 .interactive-map__stage--open .interactive-map__prompt {
   opacity: 0;
 }
+.interactive-map__stage {
+  perspective: 1000px;
+}
+
 .interactive-map__window {
+  --map-3d-rx: 0deg;
+  --map-3d-ry: 0deg;
+  --map-3d-rz: 0deg;
+  --map-3d-scale: 1;
   position: absolute;
   z-index: 3;
-  top: 16%;
-  left: 13.5%;
+  /* Encaixa exatamente no miolo plano entre os rolos esquerdo e direito do modelo 3D */
+  top: 28%;
+  left: 20.5%;
   display: flex;
-  width: 73%;
-  height: 68%;
+  width: 59%;
+  height: 50%;
   flex-direction: column;
-  gap: 6px;
-  padding: 7px;
+  gap: 2px;
+  padding: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--theme-primary) 48%, transparent);
-  border-radius: 11px;
-  background: rgb(18 15 11 / 97%);
-  box-shadow:
-    0 24px 68px rgb(0 0 0 / 60%),
-    0 0 0 4px color-mix(in srgb, var(--theme-primary) 9%, transparent),
-    inset 0 1px rgb(255 244 219 / 11%);
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  /* Esfumaça as 4 bordas da div para ela se fundir na textura do modelo 3D atrás */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 7%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 7%, #000 91%, transparent 100%);
+  mask-composite: intersect;
   opacity: 0;
-  transform: translateY(15px) scale(0.94);
+  transform-style: preserve-3d;
+  transform:
+    rotateX(var(--map-3d-rx))
+    rotateY(var(--map-3d-ry))
+    rotateZ(var(--map-3d-rz))
+    scale(var(--map-3d-scale)) !important;
+  will-change: transform, opacity;
   visibility: hidden;
 }
+
+.interactive-map__window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: url('../assets/old-map-parchment.webp') center / cover no-repeat;
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+}
+
 .interactive-map__window-bar {
+  position: relative;
+  z-index: 3;
   display: flex;
-  min-height: 28px;
+  min-height: 22px;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 4px 0 5px;
-  color: #d7c6a4;
+  padding: 2px 14px 3px;
+  color: #2b1706;
   font-size: 8px;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 1.15px;
+  border-bottom: 1px dashed rgb(68 38 12 / 35%);
 }
+
 .interactive-map__window-bar > span,
 .interactive-map__window-bar > a {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
-.interactive-map__window-bar > span svg {
-  color: var(--gold);
-}
+
+.interactive-map__window-bar > span svg,
 .interactive-map__window-bar > a {
-  color: #ad9975;
-  font-size: 9px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
+  color: #3d220a;
+  font-weight: 700;
+  font-size: 8.5px;
 }
-.interactive-map__window-bar > a:hover {
-  color: #f1d9a7;
-}
+
 .interactive-map__window iframe {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   min-height: 0;
   flex: 1;
-  border: 1px solid color-mix(in srgb, var(--theme-primary) 30%, transparent);
-  border-radius: 7px;
-  background: #19150f;
-  box-shadow: 0 18px 40px rgb(0 0 0 / 32%);
+  border: 0;
+  background: transparent;
+  filter: sepia(0.25) contrast(1.05) brightness(1.16) saturate(0.85);
+  mix-blend-mode: multiply;
 }
 .interactive-map__window-loading {
   display: flex;
